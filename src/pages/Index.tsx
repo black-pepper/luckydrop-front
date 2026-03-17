@@ -1,0 +1,152 @@
+import { useState, useCallback } from "react";
+import CodeInputCard from "@/components/draw/CodeInputCard";
+import UserInfoCard from "@/components/draw/UserInfoCard";
+import DrawBox from "@/components/draw/DrawBox";
+import ResultCard from "@/components/draw/ResultCard";
+import ResultHistoryList from "@/components/draw/ResultHistoryList";
+import { verifyCode, executeDraw, getResults } from "@/api/client";
+import type { DrawResponse, DrawResultResponse } from "@/api/types";
+
+type AppState = "code" | "user" | "drawing" | "result" | "history";
+type HistoryReturnState = "user" | "result";
+
+const Index = () => {
+  const [state, setState] = useState<AppState>("code");
+  const [code, setCode] = useState("");
+  const [maskedName, setMaskedName] = useState("");
+  const [remaining, setRemaining] = useState(0);
+  const [canDraw, setCanDraw] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // 뽑기 결과
+  const [drawResult, setDrawResult] = useState<DrawResponse | null>(null);
+
+  // 결과 내역
+  const [history, setHistory] = useState<DrawResultResponse[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyReturnState, setHistoryReturnState] = useState<HistoryReturnState>("user");
+
+  // 코드 검증 (mock findUser → verifyCode API)
+  const handleCodeSubmit = async (inputCode: string) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const data = await verifyCode(inputCode);
+      setCode(inputCode);
+      setMaskedName(data.maskedName ?? "사용자");
+      setRemaining(data.remainingCount ?? 0);
+      setCanDraw(data.canDraw ?? false);
+      setState("user");
+    } catch (e: any) {
+      setError(e.message ?? "사용할 수 없는 코드예요. 코드를 다시 확인해 주세요 🙏");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartDraw = () => {
+    setState("drawing");
+  };
+
+  // 뽑기 실행 (mock getRandomPrize → executeDraw API)
+  const handleDrawComplete = useCallback(async () => {
+    try {
+      const result = await executeDraw(code);
+      setDrawResult(result);
+      setRemaining(result.remainingCount ?? 0);
+      setState("result");
+    } catch (e: any) {
+      setError(e.message ?? "뽑기 처리 중 오류가 발생했습니다");
+      setState("user");
+    }
+  }, [code]);
+
+  const handleDrawAgain = () => {
+    setState("drawing");
+  };
+
+  // 초기화
+  const handleReset = () => {
+    setState("code");
+    setCode("");
+    setMaskedName("");
+    setError(null);
+    setDrawResult(null);
+    setRemaining(0);
+    setCanDraw(false);
+    setHistory([]);
+    setHistoryReturnState("user");
+  };
+
+  // 결과 내역 보기 (mock history → getResults API)
+  const handleViewHistory = async () => {
+    setHistoryReturnState(state === "result" && drawResult ? "result" : "user");
+    setHistoryLoading(true);
+    setState("history");
+    try {
+      const data = await getResults(code);
+      setHistory(data ?? []);
+    } catch {
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleHistoryBack = () => {
+    setState(historyReturnState === "result" && drawResult ? "result" : "user");
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+      {/* Decorative background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-10 left-10 w-32 h-32 rounded-full bg-peach/20 blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-40 h-40 rounded-full bg-lavender/20 blur-3xl" />
+        <div className="absolute top-1/2 left-1/3 w-24 h-24 rounded-full bg-mint/20 blur-3xl" />
+      </div>
+
+      <div className="w-full max-w-sm">
+        {state === "code" && (
+          <CodeInputCard onSubmit={handleCodeSubmit} error={error} loading={loading} />
+        )}
+        {state === "user" && (
+          <UserInfoCard
+            maskedName={maskedName}
+            remainingDraws={remaining}
+            hasHistory={true}
+            onDraw={handleStartDraw}
+            onBack={handleReset}
+            onViewHistory={handleViewHistory}
+          />
+        )}
+        {state === "drawing" && (
+          <DrawBox onComplete={handleDrawComplete} />
+        )}
+        {state === "result" && drawResult && (
+          <ResultCard
+            rewardName={drawResult.rewardName ?? "알 수 없는 보상"}
+            rewardImageUrl={drawResult.rewardImageUrl}
+            drawNo={drawResult.drawNo ?? 0}
+            remainingDraws={remaining}
+            onDrawAgain={handleDrawAgain}
+            onFinish={handleReset}
+            onViewHistory={handleViewHistory}
+            onReset={handleReset}
+          />
+        )}
+        {state === "history" && (
+          <ResultHistoryList
+            results={history}
+            loading={historyLoading}
+            onBack={handleHistoryBack}
+            onReset={handleReset}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Index;
