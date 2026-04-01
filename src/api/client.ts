@@ -7,8 +7,7 @@ import type {
   DrawResultResponse,
 } from "./types";
 
-const PROD_API_BASE_URL = "https://port-0-luckydrop-api-mmj1aamw01ba1757.sel3.cloudtype.app";
-const API_BASE_URL = import.meta.env.DEV ? "" : PROD_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -50,15 +49,13 @@ export async function executeDraw(code: string): Promise<DrawResponse> {
 }
 
 // 보상 목록 조회 (mock rewards → API)
-export async function getRewards(): Promise<RewardResponse[]> {
-  return request<RewardResponse[]>("/api/draw/rewards");
+export async function getRewards(code: string): Promise<RewardResponse[]> {
+  return request<RewardResponse[]>(`/api/draw/rewards?code=${encodeURIComponent(code)}`);
 }
 
 // 결과 내역 조회 (mock history → API)
-export async function getResults(code: string, scope: string = "code"): Promise<DrawResultResponse[]> {
-  return request<DrawResultResponse[]>(
-    `/api/draw/results?code=${encodeURIComponent(code)}&scope=${encodeURIComponent(scope)}`
-  );
+export async function getResults(code: string): Promise<DrawResultResponse[]> {
+  return request<DrawResultResponse[]>(`/api/draw/results?code=${encodeURIComponent(code)}`);
 }
 
 export { ApiError };

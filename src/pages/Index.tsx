@@ -113,6 +113,7 @@ const Index = () => {
         )}
         {state === "user" && (
           <UserInfoCard
+            code={code}
             maskedName={maskedName}
             remainingDraws={remaining}
             hasHistory={true}

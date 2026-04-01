@@ -26,7 +26,7 @@ export interface DrawResponse {
   drawnAt: string; // ISO date-time
 }
 
-// GET /api/draw/rewards
+// GET /api/draw/rewards?code=
 export interface RewardResponse {
   id: number;
   name: string;
@@ -38,7 +38,7 @@ export interface RewardResponse {
   imageUrl?: string;
 }
 
-// GET /api/draw/results?code=&scope=
+// GET /api/draw/results?code=
 export interface DrawResultResponse {
   drawResultId: number;
   rewardName: string;

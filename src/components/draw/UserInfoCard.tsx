@@ -2,6 +2,7 @@ import { User, RefreshCw, ClipboardList } from "lucide-react";
 import RewardListCard from "./RewardListCard";
 
 interface UserInfoCardProps {
+  code: string;
   maskedName: string;
   remainingDraws: number;
   hasHistory: boolean;
@@ -10,7 +11,7 @@ interface UserInfoCardProps {
   onViewHistory: () => void;
 }
 
-const UserInfoCard = ({ maskedName, remainingDraws, hasHistory, onDraw, onBack, onViewHistory }: UserInfoCardProps) => {
+const UserInfoCard = ({ code, maskedName, remainingDraws, hasHistory, onDraw, onBack, onViewHistory }: UserInfoCardProps) => {
   const noDrawsLeft = remainingDraws <= 0;
 
   return (
@@ -57,7 +58,7 @@ const UserInfoCard = ({ maskedName, remainingDraws, hasHistory, onDraw, onBack, 
           </button>
         )}
 
-        <RewardListCard />
+        <RewardListCard code={code} />
       </div>
 
       <button

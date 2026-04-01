@@ -36,6 +36,18 @@ npm i
 npm run dev
 ```
 
+## Environment variables
+
+API endpoints are split by Vite mode.
+
+- `.env.development`
+  - `VITE_API_BASE_URL=`: keep empty in local development so browser requests go through the Vite `/api` proxy
+  - `VITE_API_PROXY_TARGET=...`: backend URL used by the local dev server proxy
+- `.env.production`
+  - `VITE_API_BASE_URL=...`: backend base URL embedded into the production build
+
+If you need to point to another backend, update the matching `.env.*` file before running `npm run dev` or `npm run build`.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
