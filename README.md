@@ -38,15 +38,26 @@ npm run dev
 
 ## Environment variables
 
-API endpoints are split by Vite mode.
+This project uses a single `.env` file locally, and Cloudflare Pages variables in production.
 
-- `.env.development`
-  - `VITE_API_BASE_URL=`: keep empty in local development so browser requests go through the Vite `/api` proxy
-  - `VITE_API_PROXY_TARGET=...`: backend URL used by the local dev server proxy
-- `.env.production`
-  - `VITE_API_BASE_URL=...`: backend base URL embedded into the production build
+- Copy `.env.example` to `.env`, then fill in only the values you actually use.
+- `VITE_API_BASE_URL=...`: backend base URL used by both local development and production builds
+- `VITE_SUPABASE_URL=...`: Supabase project URL for admin login
+- `VITE_SUPABASE_ANON_KEY=...`: Supabase anon key for admin login
+- `VITE_SUPABASE_REDIRECT_URL=...`: optional explicit OAuth redirect URL
+- `VITE_ADMIN_LOGIN_REDIRECT_PATH=/admin`: optional post-login redirect path
 
-If you need to point to another backend, update the matching `.env.*` file before running `npm run dev` or `npm run build`.
+Leaving a value blank is allowed, but blank values are treated as an empty string. For required settings such as production API or Supabase credentials, it is safer to either provide a real value or remove the variable entirely until you are ready to use it.
+
+If you need to point to another backend, update `.env` before running `npm run dev` or `npm run build`. In Cloudflare Pages, set the same variable names in the dashboard instead of committing a production env file.
+
+## Package manager
+
+This project is standardized on npm.
+
+- Install dependencies with `npm install`
+- Use `package-lock.json` as the source of truth
+- Do not commit `bun.lock` or `bun.lockb`, otherwise some CI platforms may auto-detect Bun and run `bun install --frozen-lockfile`
 
 **Edit a file directly in GitHub**
 
