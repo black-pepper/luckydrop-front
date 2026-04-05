@@ -1,32 +1,147 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getAccessTokenFromSession, isSupabaseConfigured, supabase } from "@/lib/supabase";
 
-const AdminLogin: React.FC = () => (
-  <div
-    className="flex items-center justify-center min-h-screen px-4"
-    style={{ background: "hsl(var(--admin-bg))" }}
-  >
-    <Card className="w-full max-w-sm text-center shadow-lg">
-      <CardContent className="p-8 space-y-6">
-        {/* Logo */}
-        <div className="text-4xl">🎯</div>
-        <h1 className="text-2xl font-bold text-foreground">LuckyDrop</h1>
-        <p className="text-muted-foreground text-sm leading-relaxed">
-          이벤트를 만들고 공유해보세요.<br />
-          뽑기, 퀴즈, 메시지함 등 다양한<br />
-          참여형 콘텐츠를 손쉽게 관리하세요.
-        </p>
+const DEFAULT_REDIRECT_PATH = import.meta.env.VITE_ADMIN_LOGIN_REDIRECT_PATH ?? "/admin";
+const CALLBACK_EVENT_TYPES: AuthChangeEvent[] = ["INITIAL_SESSION", "SIGNED_IN", "TOKEN_REFRESHED"];
+const ADMIN_LOGIN_CALLBACK_URL =
+  import.meta.env.VITE_SUPABASE_REDIRECT_URL ?? new URL("/admin/login", window.location.origin).toString();
 
-        {/* Google Login Button */}
-        <Button
-          className="w-full gap-2 font-semibold"
-          variant="outline"
-          size="lg"
-          asChild
-        >
-          <Link to="/admin">
+const AdminLogin: React.FC = () => {
+  const navigate = useNavigate();
+  const navigatedTokenRef = React.useRef<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+
+  const completeLogin = React.useCallback(
+    async (session: Session | null) => {
+      const accessToken = getAccessTokenFromSession(session);
+
+      if (!accessToken || navigatedTokenRef.current === accessToken) {
+        return;
+      }
+
+      navigatedTokenRef.current = accessToken;
+      setIsSubmitting(true);
+      setErrorMessage(null);
+      setStatusMessage("로그인 정보를 확인하고 있어요.");
+
+      try {
+        setStatusMessage("로그인에 성공했어요. 관리자 화면으로 이동합니다.");
+        navigate(DEFAULT_REDIRECT_PATH, { replace: true });
+      } catch (error) {
+        navigatedTokenRef.current = null;
+        setStatusMessage(null);
+        setErrorMessage(error instanceof Error ? error.message : "로그인 처리 중 오류가 발생했습니다.");
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [navigate],
+  );
+
+  React.useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setErrorMessage("Supabase 환경 변수가 설정되지 않았습니다. VITE_SUPABASE_URL과 VITE_SUPABASE_ANON_KEY를 확인해주세요.");
+      return;
+    }
+
+    let isMounted = true;
+
+    const initializeSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          throw error;
+        }
+
+        if (isMounted && data.session) {
+          await completeLogin(data.session);
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setErrorMessage(error instanceof Error ? error.message : "Supabase 세션을 확인하지 못했습니다.");
+      }
+    };
+
+    void initializeSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (CALLBACK_EVENT_TYPES.includes(event) && session) {
+        void completeLogin(session);
+      }
+
+      if (event === "SIGNED_OUT") {
+        navigatedTokenRef.current = null;
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [completeLogin]);
+
+  const handleGoogleLogin = async () => {
+    if (!isSupabaseConfigured) {
+      setErrorMessage("Supabase 환경 변수가 설정되지 않았습니다. 관리자에게 설정값을 확인해주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    setStatusMessage("Google 로그인 화면으로 이동하고 있어요.");
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: ADMIN_LOGIN_CALLBACK_URL,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      setIsSubmitting(false);
+      setStatusMessage(null);
+      setErrorMessage(error instanceof Error ? error.message : "Google 로그인을 시작하지 못했습니다.");
+    }
+  };
+
+  return (
+    <div
+      className="flex items-center justify-center min-h-screen px-4"
+      style={{ background: "hsl(var(--admin-bg))" }}
+    >
+      <Card className="w-full max-w-sm text-center shadow-lg">
+        <CardContent className="p-8 space-y-6">
+          <div className="text-4xl">🎯</div>
+          <h1 className="text-2xl font-bold text-foreground">LuckyDrop</h1>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            이벤트를 만들고 공유해보세요.<br />
+            뽑기, 퀴즈, 메시지함 등 다양한<br />
+            참여형 콘텐츠를 손쉽게 관리하세요.
+          </p>
+
+          <Button
+            className="w-full gap-2 font-semibold"
+            variant="outline"
+            size="lg"
+            onClick={handleGoogleLogin}
+            disabled={isSubmitting}
+          >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"
@@ -45,16 +160,24 @@ const AdminLogin: React.FC = () => (
                 fill="#EA4335"
               />
             </svg>
-            Google로 시작하기
-          </Link>
-        </Button>
+            {isSubmitting ? "로그인 처리 중..." : "Google로 시작하기"}
+          </Button>
 
-        <p className="text-xs text-muted-foreground">
-          주최자 계정으로 로그인해주세요
-        </p>
-      </CardContent>
-    </Card>
-  </div>
-);
+          {statusMessage ? (
+            <p className="text-xs text-muted-foreground">{statusMessage}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">주최자 계정으로 로그인해주세요</p>
+          )}
+
+          {errorMessage ? (
+            <p className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {errorMessage}
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 export default AdminLogin;
