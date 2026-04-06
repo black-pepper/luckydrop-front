@@ -1,18 +1,20 @@
 import { useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import CodeInputCard from "@/components/draw/CodeInputCard";
 import UserInfoCard from "@/components/draw/UserInfoCard";
 import DrawBox from "@/components/draw/DrawBox";
 import ResultCard from "@/components/draw/ResultCard";
 import ResultHistoryList from "@/components/draw/ResultHistoryList";
 import { verifyCode, executeDraw, getResults } from "@/api/client";
-import type { DrawResponse, DrawResultResponse } from "@/api/types";
+import type { DrawParticipantParams, DrawResponse, DrawResultResponse } from "@/api/types";
 
 type AppState = "code" | "user" | "drawing" | "result" | "history";
 type HistoryReturnState = "user" | "result";
 
 const Index = () => {
+  const [searchParams] = useSearchParams();
   const [state, setState] = useState<AppState>("code");
-  const [code, setCode] = useState("");
+  const [invitationCode, setInvitationCode] = useState("");
   const [maskedName, setMaskedName] = useState("");
   const [remaining, setRemaining] = useState(0);
   const [canDraw, setCanDraw] = useState(false);
@@ -27,13 +29,28 @@ const Index = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyReturnState, setHistoryReturnState] = useState<HistoryReturnState>("user");
 
+  const contentCode = searchParams.get("contentCode") ?? searchParams.get("event") ?? "";
+
+  const getDrawParams = useCallback(
+    (nextInvitationCode?: string): DrawParticipantParams => ({
+      contentCode,
+      invitationCode: nextInvitationCode ?? invitationCode,
+    }),
+    [contentCode, invitationCode],
+  );
+
   // 코드 검증 (mock findUser → verifyCode API)
   const handleCodeSubmit = async (inputCode: string) => {
     setError(null);
+    if (!contentCode) {
+      setError("콘텐츠 정보가 없습니다. 올바른 참여 링크로 접속해 주세요.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const data = await verifyCode(inputCode);
-      setCode(inputCode);
+      const data = await verifyCode(getDrawParams(inputCode));
+      setInvitationCode(inputCode);
       setMaskedName(data.maskedName ?? "사용자");
       setRemaining(data.remainingCount ?? 0);
       setCanDraw(data.canDraw ?? false);
@@ -46,13 +63,16 @@ const Index = () => {
   };
 
   const handleStartDraw = () => {
+    if (!canDraw || remaining <= 0) {
+      return;
+    }
     setState("drawing");
   };
 
   // 뽑기 실행 (mock getRandomPrize → executeDraw API)
   const handleDrawComplete = useCallback(async () => {
     try {
-      const result = await executeDraw(code);
+      const result = await executeDraw(getDrawParams());
       setDrawResult(result);
       setRemaining(result.remainingCount ?? 0);
       setState("result");
@@ -60,7 +80,7 @@ const Index = () => {
       setError(e.message ?? "뽑기 처리 중 오류가 발생했습니다");
       setState("user");
     }
-  }, [code]);
+  }, [getDrawParams]);
 
   const handleDrawAgain = () => {
     setState("drawing");
@@ -69,7 +89,7 @@ const Index = () => {
   // 초기화
   const handleReset = () => {
     setState("code");
-    setCode("");
+    setInvitationCode("");
     setMaskedName("");
     setError(null);
     setDrawResult(null);
@@ -80,19 +100,19 @@ const Index = () => {
   };
 
   // 결과 내역 보기 (mock history → getResults API)
-  const handleViewHistory = async () => {
+  const handleViewHistory = useCallback(async () => {
     setHistoryReturnState(state === "result" && drawResult ? "result" : "user");
     setHistoryLoading(true);
     setState("history");
     try {
-      const data = await getResults(code);
+      const data = await getResults(getDrawParams());
       setHistory(data ?? []);
     } catch {
       setHistory([]);
     } finally {
       setHistoryLoading(false);
     }
-  };
+  }, [drawResult, getDrawParams, state]);
 
   const handleHistoryBack = () => {
     setState(historyReturnState === "result" && drawResult ? "result" : "user");
@@ -113,7 +133,8 @@ const Index = () => {
         )}
         {state === "user" && (
           <UserInfoCard
-            code={code}
+            contentCode={contentCode}
+            invitationCode={invitationCode}
             maskedName={maskedName}
             remainingDraws={remaining}
             hasHistory={true}

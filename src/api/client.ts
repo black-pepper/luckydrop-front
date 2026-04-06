@@ -3,6 +3,7 @@ import type {
   CodeVerifyResponse,
   DrawRequest,
   DrawResponse,
+  DrawParticipantParams,
   RewardResponse,
   DrawResultResponse,
 } from "./types";
@@ -35,27 +36,34 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   return json.data;
 }
 
+function buildDrawQuery({ contentCode, invitationCode }: DrawParticipantParams) {
+  return new URLSearchParams({
+    contentCode,
+    invitationCode,
+  }).toString();
+}
+
 // 코드 검증 (mock findUser → API)
-export async function verifyCode(code: string): Promise<CodeVerifyResponse> {
-  return request<CodeVerifyResponse>(`/api/draw/verify?code=${encodeURIComponent(code)}`);
+export async function verifyCode(params: DrawParticipantParams): Promise<CodeVerifyResponse> {
+  return request<CodeVerifyResponse>(`/api/draw/verify?${buildDrawQuery(params)}`);
 }
 
 // 뽑기 실행 (mock getRandomPrize → API)
-export async function executeDraw(code: string): Promise<DrawResponse> {
+export async function executeDraw(payload: DrawRequest): Promise<DrawResponse> {
   return request<DrawResponse>("/api/draw/execute", {
     method: "POST",
-    body: JSON.stringify({ code } satisfies DrawRequest),
+    body: JSON.stringify(payload satisfies DrawRequest),
   });
 }
 
 // 보상 목록 조회 (mock rewards → API)
-export async function getRewards(code: string): Promise<RewardResponse[]> {
-  return request<RewardResponse[]>(`/api/draw/rewards?code=${encodeURIComponent(code)}`);
+export async function getRewards(params: DrawParticipantParams): Promise<RewardResponse[]> {
+  return request<RewardResponse[]>(`/api/draw/rewards?${buildDrawQuery(params)}`);
 }
 
 // 결과 내역 조회 (mock history → API)
-export async function getResults(code: string): Promise<DrawResultResponse[]> {
-  return request<DrawResultResponse[]>(`/api/draw/results?code=${encodeURIComponent(code)}`);
+export async function getResults(params: DrawParticipantParams): Promise<DrawResultResponse[]> {
+  return request<DrawResultResponse[]>(`/api/draw/results?${buildDrawQuery(params)}`);
 }
 
 export { ApiError };
