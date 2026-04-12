@@ -14,6 +14,7 @@ import type {
   AdminContentDeleteResponse,
   UserInfo,
 } from "./types";
+import { supabase } from "@/lib/supabase";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -22,22 +23,6 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
-}
-
-// ── Auth token helpers ──────────────────────────────────────────────────────
-
-const AUTH_TOKEN_KEY = "auth_token";
-
-export function getAuthToken(): string | null {
-  return localStorage.getItem(AUTH_TOKEN_KEY);
-}
-
-export function setAuthToken(token: string): void {
-  localStorage.setItem(AUTH_TOKEN_KEY, token);
-}
-
-export function clearAuthToken(): void {
-  localStorage.removeItem(AUTH_TOKEN_KEY);
 }
 
 // ── Base request helpers ────────────────────────────────────────────────────
@@ -92,13 +77,13 @@ export async function getResults(params: DrawParticipantParams): Promise<DrawRes
 }
 
 async function authRequest<T>(url: string, options?: RequestInit): Promise<T> {
-  const token = getAuthToken();
-  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
 
   const res = await fetch(`${API_BASE_URL}${url}`, {
     headers: {
       "Content-Type": "application/json",
-      ...authHeader,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     ...options,
   });
