@@ -4,13 +4,13 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, Shuffle, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
-import { createAdminContent } from "@/api/client";
-
-type ContentType = "draw" | "quiz" | "messagebox";
+import { createAdminContent, createAdminReward } from "@/api/client";
+import type { ContentType } from "@/data/adminMockData";
 
 const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string }[] = [
   { value: "draw", label: "뽑기", icon: <Gift className="h-7 w-7" />, desc: "보상을 설정하고 참여자가 뽑기" },
@@ -18,13 +18,21 @@ const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; d
   { value: "messagebox", label: "메시지함", icon: <MessageSquare className="h-7 w-7" />, desc: "익명으로 메시지를 남기기" },
 ];
 
-interface RewardRow { id: number; name: string; weight: number; stock: number; imageUrl: string }
+interface RewardRow {
+  id: number;
+  name: string;
+  weight: number;
+  stock: number;
+  imageUrl: string;
+  unlimited: boolean;
+  allowDuplicateReward: boolean;
+}
 interface CodeRow { id: number; code: string; nickname: string; memo: string; remaining: number }
 
 const initialRewards: RewardRow[] = [
-  { id: 1, name: "스타벅스 쿠폰", weight: 10, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕" },
-  { id: 2, name: "비타500", weight: 25, stock: 54, imageUrl: "" },
-  { id: 3, name: "꽝", weight: 60, stock: 999, imageUrl: "" },
+  { id: 1, name: "스타벅스 쿠폰", weight: 10, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: false },
+  { id: 2, name: "비타500", weight: 25, stock: 54, imageUrl: "", unlimited: false, allowDuplicateReward: false },
+  { id: 3, name: "꽝", weight: 60, stock: 999, imageUrl: "", unlimited: true, allowDuplicateReward: false },
 ];
 
 const initialCodes: CodeRow[] = [
@@ -44,9 +52,10 @@ const CreateContent: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const addReward = () => setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, stock: 10, imageUrl: "" }]);
+  const addReward = () =>
+    setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, stock: 10, imageUrl: "", unlimited: false, allowDuplicateReward: false }]);
   const removeReward = (id: number) => setRewards((r) => r.filter((x) => x.id !== id));
-  const updateReward = (id: number, field: keyof RewardRow, value: string | number) =>
+  const updateReward = (id: number, field: keyof RewardRow, value: string | number | boolean) =>
     setRewards((r) => r.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
 
   const addCode = () => setCodes((c) => [...c, { id: Date.now(), code: "", nickname: "", memo: "", remaining: 3 }]);
@@ -65,6 +74,35 @@ const CreateContent: React.FC = () => {
     if (step === 1) return !!contentType;
     if (step === 2) return title.trim().length > 0;
     return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!contentType) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const created = await createAdminContent({
+        type: contentType,
+        title: title.trim(),
+        description: description.trim(),
+      });
+      await Promise.all(
+        rewards.map((r) =>
+          createAdminReward({
+            contentCode: created.code,
+            name: r.name,
+            weight: r.weight,
+            stock: r.unlimited ? undefined : r.stock,
+            imageUrl: r.imageUrl || undefined,
+            allowDuplicateReward: r.allowDuplicateReward,
+          })
+        )
+      );
+      navigate("/admin");
+    } catch (e: any) {
+      setSubmitError(e.message ?? "콘텐츠 생성에 실패했습니다");
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -126,7 +164,7 @@ const CreateContent: React.FC = () => {
         </Card>
       )}
 
-      {/* Step 3: Content config (draw rewards) */}
+      {/* Step 3: Rewards */}
       {step === 3 && (
         <div className="space-y-4">
           <Card>
@@ -137,7 +175,6 @@ const CreateContent: React.FC = () => {
               {rewards.map((r, idx) => (
                 <Card key={r.id} className="border border-border bg-muted/30">
                   <CardContent className="p-4 space-y-4">
-                    {/* Header with index and delete */}
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-foreground">보상 #{idx + 1}</span>
                       <Button size="icon" variant="ghost" onClick={() => removeReward(r.id)}>
@@ -145,7 +182,6 @@ const CreateContent: React.FC = () => {
                       </Button>
                     </div>
 
-                    {/* Reward name */}
                     <div className="space-y-1.5">
                       <Label className="text-sm">보상 이름</Label>
                       <Input
@@ -155,7 +191,6 @@ const CreateContent: React.FC = () => {
                       />
                     </div>
 
-                    {/* Weight + Stock row */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <Label className="text-sm">가중치</Label>
@@ -174,16 +209,24 @@ const CreateContent: React.FC = () => {
                           placeholder="예: 5"
                           value={r.stock}
                           onChange={(e) => updateReward(r.id, "stock", Number(e.target.value))}
+                          disabled={r.unlimited}
+                          className={r.unlimited ? "opacity-50" : ""}
                         />
                         <p className="text-[11px] text-muted-foreground">남아 있는 보상 개수</p>
+                        <div className="flex items-center gap-2 pt-1">
+                          <Switch
+                            id={`unlimited-${r.id}`}
+                            checked={r.unlimited}
+                            onCheckedChange={(checked) => updateReward(r.id, "unlimited", checked)}
+                          />
+                          <Label htmlFor={`unlimited-${r.id}`} className="text-xs text-muted-foreground cursor-pointer">무제한</Label>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Image URL */}
                     <div className="space-y-1.5">
                       <Label className="text-sm">보상 이미지</Label>
                       <div className="flex gap-3 items-start">
-                        {/* Thumbnail preview */}
                         <div className="shrink-0 w-[72px] h-[72px] rounded-lg border border-dashed border-border bg-muted flex items-center justify-center overflow-hidden">
                           {r.imageUrl ? (
                             <img src={r.imageUrl} alt={r.name || "보상 이미지"} className="w-full h-full object-cover" />
@@ -200,6 +243,15 @@ const CreateContent: React.FC = () => {
                           <p className="text-[11px] text-muted-foreground">보상 대표 이미지 URL (선택사항)</p>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id={`duplicate-${r.id}`}
+                        checked={r.allowDuplicateReward}
+                        onCheckedChange={(checked) => updateReward(r.id, "allowDuplicateReward", !!checked)}
+                      />
+                      <Label htmlFor={`duplicate-${r.id}`} className="text-sm cursor-pointer">중복 당첨 허용</Label>
                     </div>
                   </CardContent>
                 </Card>
@@ -240,7 +292,6 @@ const CreateContent: React.FC = () => {
                 </tbody>
               </table>
             </div>
-
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" className="gap-1.5" onClick={addCode}>
                 <Plus className="h-4 w-4" /> 코드 추가
@@ -249,9 +300,7 @@ const CreateContent: React.FC = () => {
                 <Shuffle className="h-4 w-4" /> 코드 자동 생성
               </Button>
             </div>
-            {submitError && (
-              <p className="text-sm text-destructive">{submitError}</p>
-            )}
+            {submitError && <p className="text-sm text-destructive">{submitError}</p>}
           </CardContent>
         </Card>
       )}
@@ -266,25 +315,7 @@ const CreateContent: React.FC = () => {
             다음 <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         ) : (
-          <Button
-            onClick={async () => {
-              if (!contentType) return;
-              setSubmitting(true);
-              setSubmitError(null);
-              try {
-                await createAdminContent({
-                  type: contentType,
-                  title: title.trim(),
-                  description: description.trim(),
-                });
-                navigate("/admin");
-              } catch (e: any) {
-                setSubmitError(e.message ?? "콘텐츠 생성에 실패했습니다");
-                setSubmitting(false);
-              }
-            }}
-            disabled={submitting}
-          >
+          <Button onClick={handleSubmit} disabled={submitting}>
             {submitting ? "생성 중..." : "완료"}
           </Button>
         )}

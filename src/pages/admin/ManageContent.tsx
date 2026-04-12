@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, ArrowLeft } from "lucide-react";
+import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus } from "lucide-react";
 import {
   getAdminContentDetail,
   updateAdminContent,
@@ -18,6 +20,125 @@ import {
   deleteAdminReward,
 } from "@/api/client";
 import type { AdminContentDetailResponse, AdminRewardResponse } from "@/api/types";
+import { mockInviteCodes, mockResults } from "@/data/adminMockData";
+
+// ── Local form type ─────────────────────────────────────────────────────────
+
+interface RewardFormState {
+  name: string;
+  description: string;
+  weight: number;
+  stock: number;
+  unlimited: boolean;
+  imageUrl: string;
+  allowDuplicateReward: boolean;
+}
+
+const emptyForm = (): RewardFormState => ({
+  name: "", description: "", weight: 10, stock: 10,
+  unlimited: false, imageUrl: "", allowDuplicateReward: false,
+});
+
+const fromApiReward = (r: AdminRewardResponse): RewardFormState => ({
+  name: r.name,
+  description: r.description ?? "",
+  weight: r.weight,
+  stock: r.stock ?? 0,
+  unlimited: r.stock == null,
+  imageUrl: r.imageUrl ?? "",
+  allowDuplicateReward: r.allowDuplicateReward,
+});
+
+// ── RewardFormCard ──────────────────────────────────────────────────────────
+
+const RewardFormCard: React.FC<{
+  formId: string;
+  title: string;
+  form: RewardFormState;
+  onChange: (f: RewardFormState) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  saving?: boolean;
+  error?: string | null;
+}> = ({ formId, title, form, onChange, onSave, onCancel, saving, error }) => (
+  <Card className="border border-primary/30 bg-muted/20">
+    <CardContent className="p-4 space-y-3">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <div className="space-y-1.5">
+        <Label className="text-sm">보상 이름</Label>
+        <Input placeholder="예: 스타벅스 쿠폰" value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} />
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-sm">설명</Label>
+        <Input placeholder="보상에 대한 간단한 설명" value={form.description} onChange={(e) => onChange({ ...form, description: e.target.value })} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-sm">가중치</Label>
+          <Input type="number" placeholder="10" value={form.weight} onChange={(e) => onChange({ ...form, weight: Number(e.target.value) })} />
+          <p className="text-[11px] text-muted-foreground">당첨 확률 비율에 사용되는 값</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm">수량</Label>
+          <Input
+            type="number"
+            placeholder="5"
+            value={form.stock}
+            disabled={form.unlimited}
+            className={form.unlimited ? "opacity-50" : ""}
+            onChange={(e) => onChange({ ...form, stock: Number(e.target.value) })}
+          />
+          <p className="text-[11px] text-muted-foreground">남아 있는 보상 개수</p>
+          <div className="flex items-center gap-2 pt-1">
+            <Switch
+              id={`unlimited-${formId}`}
+              checked={form.unlimited}
+              onCheckedChange={(checked) => onChange({ ...form, unlimited: !!checked })}
+            />
+            <Label htmlFor={`unlimited-${formId}`} className="text-xs text-muted-foreground cursor-pointer">무제한</Label>
+          </div>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-sm">이미지 URL</Label>
+        <div className="flex gap-3 items-start">
+          <div className="shrink-0 w-[56px] h-[56px] rounded-md border border-dashed border-border bg-muted flex items-center justify-center overflow-hidden">
+            {form.imageUrl ? (
+              <img src={form.imageUrl} alt={form.name || "보상 이미지"} className="w-full h-full object-cover" />
+            ) : (
+              <ImagePlus className="h-5 w-5 text-muted-foreground" />
+            )}
+          </div>
+          <Input
+            className="flex-1"
+            placeholder="이미지 URL을 입력하세요"
+            value={form.imageUrl}
+            onChange={(e) => onChange({ ...form, imageUrl: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id={`dup-${formId}`}
+          checked={form.allowDuplicateReward}
+          onCheckedChange={(checked) => onChange({ ...form, allowDuplicateReward: !!checked })}
+        />
+        <Label htmlFor={`dup-${formId}`} className="text-sm cursor-pointer">중복 당첨 허용</Label>
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" className="gap-1" onClick={onSave} disabled={saving}>
+          <Check className="h-3.5 w-3.5" /> {saving ? "저장 중..." : "저장"}
+        </Button>
+        <Button size="sm" variant="outline" className="gap-1" onClick={onCancel} disabled={saving}>
+          <X className="h-3.5 w-3.5" /> 취소
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// ── ManageContent ───────────────────────────────────────────────────────────
 
 const typeLabel: Record<string, string> = {
   draw: "뽑기",
@@ -25,32 +146,23 @@ const typeLabel: Record<string, string> = {
   messagebox: "메시지함",
 };
 
-const emptyRewardForm = {
-  name: "",
-  description: "",
-  weight: 1,
-  stock: 0,
-  allowDuplicateReward: false,
-};
-
 const ManageContent: React.FC = () => {
   const { contentCode } = useParams<{ contentCode: string }>();
   const navigate = useNavigate();
 
+  // Content state
   const [content, setContent] = useState<AdminContentDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Edit state
+  // Edit content state
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editType, setEditType] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  // Delete state
   const [deleting, setDeleting] = useState(false);
 
   // Rewards state
@@ -60,13 +172,13 @@ const ManageContent: React.FC = () => {
 
   // Add reward form
   const [showAddForm, setShowAddForm] = useState(false);
-  const [addForm, setAddForm] = useState(emptyRewardForm);
+  const [addForm, setAddForm] = useState<RewardFormState>(emptyForm());
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
-  // Edit reward state
+  // Edit reward form
   const [editingRewardId, setEditingRewardId] = useState<number | null>(null);
-  const [editRewardForm, setEditRewardForm] = useState(emptyRewardForm);
+  const [editRewardForm, setEditRewardForm] = useState<RewardFormState>(emptyForm());
   const [editingReward, setEditingReward] = useState(false);
   const [editRewardError, setEditRewardError] = useState<string | null>(null);
 
@@ -85,7 +197,6 @@ const ManageContent: React.FC = () => {
       .finally(() => setLoading(false));
   }, [contentCode]);
 
-  // Fetch rewards using contentCode
   useEffect(() => {
     if (!contentCode) return;
     setRewardsLoading(true);
@@ -138,17 +249,23 @@ const ManageContent: React.FC = () => {
     }
   };
 
-  // ── Reward handlers ────────────────────────────────────────────────────────
-
   const handleAddReward = async () => {
     if (!contentCode) return;
     setAdding(true);
     setAddError(null);
     try {
-      const created = await createAdminReward({ ...addForm, contentCode });
+      const created = await createAdminReward({
+        contentCode,
+        name: addForm.name,
+        weight: addForm.weight,
+        stock: addForm.unlimited ? undefined : addForm.stock,
+        description: addForm.description || undefined,
+        imageUrl: addForm.imageUrl || undefined,
+        allowDuplicateReward: addForm.allowDuplicateReward,
+      });
       setRewards((prev) => [...prev, created]);
       setShowAddForm(false);
-      setAddForm(emptyRewardForm);
+      setAddForm(emptyForm());
     } catch (e: any) {
       setAddError(e.message ?? "보상 추가에 실패했습니다");
     } finally {
@@ -156,24 +273,19 @@ const ManageContent: React.FC = () => {
     }
   };
 
-  const startEditReward = (reward: AdminRewardResponse) => {
-    setEditingRewardId(reward.id);
-    setEditRewardForm({
-      name: reward.name,
-      description: reward.description ?? "",
-      weight: reward.weight,
-      stock: reward.stock ?? 0,
-      allowDuplicateReward: reward.allowDuplicateReward,
-    });
-    setEditRewardError(null);
-  };
-
   const handleUpdateReward = async () => {
     if (editingRewardId == null) return;
     setEditingReward(true);
     setEditRewardError(null);
     try {
-      const updated = await updateAdminReward(editingRewardId, editRewardForm);
+      const updated = await updateAdminReward(editingRewardId, {
+        name: editRewardForm.name,
+        weight: editRewardForm.weight,
+        stock: editRewardForm.unlimited ? undefined : editRewardForm.stock,
+        description: editRewardForm.description || undefined,
+        imageUrl: editRewardForm.imageUrl || undefined,
+        allowDuplicateReward: editRewardForm.allowDuplicateReward,
+      });
       setRewards((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
       setEditingRewardId(null);
     } catch (e: any) {
@@ -194,19 +306,11 @@ const ManageContent: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <AdminLayout>
-        <p className="text-center text-muted-foreground py-20">불러오는 중...</p>
-      </AdminLayout>
-    );
+    return <AdminLayout><p className="text-center text-muted-foreground py-20">불러오는 중...</p></AdminLayout>;
   }
 
   if (error || !content) {
-    return (
-      <AdminLayout>
-        <p className="text-center text-destructive py-20">{error ?? "콘텐츠를 찾을 수 없습니다"}</p>
-      </AdminLayout>
-    );
+    return <AdminLayout><p className="text-center text-destructive py-20">{error ?? "콘텐츠를 찾을 수 없습니다"}</p></AdminLayout>;
   }
 
   return (
@@ -225,8 +329,6 @@ const ManageContent: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Share link */}
         <div className="flex items-center gap-2 bg-muted rounded-md px-3 py-1.5 text-xs max-w-full overflow-hidden">
           <span className="truncate text-muted-foreground">{shareLink}</span>
           <Button size="sm" variant="ghost" className="shrink-0 h-7 px-2" onClick={handleCopy}>
@@ -240,7 +342,9 @@ const ManageContent: React.FC = () => {
       <Tabs defaultValue="info">
         <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="info">기본정보</TabsTrigger>
-          <TabsTrigger value="rewards">보상 관리</TabsTrigger>
+          <TabsTrigger value="rewards">보상</TabsTrigger>
+          <TabsTrigger value="codes">코드</TabsTrigger>
+          <TabsTrigger value="results">결과</TabsTrigger>
           <TabsTrigger value="share">공유</TabsTrigger>
         </TabsList>
 
@@ -249,12 +353,7 @@ const ManageContent: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base">기본 정보 수정</CardTitle>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
+              <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting}>
                 {deleting ? "삭제 중..." : "삭제"}
               </Button>
             </CardHeader>
@@ -291,81 +390,25 @@ const ManageContent: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base">보상 목록</CardTitle>
-              <Button
-                size="sm"
-                onClick={() => { setShowAddForm(true); setAddError(null); }}
-                disabled={showAddForm}
-              >
-                추가
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {/* Add form */}
-              {showAddForm && (
-                <div className="border rounded-md p-3 space-y-3 bg-muted/40">
-                  <p className="text-sm font-medium">새 보상 추가</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">이름 *</Label>
-                      <Input
-                        value={addForm.name}
-                        onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))}
-                        placeholder="보상 이름"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">설명</Label>
-                      <Input
-                        value={addForm.description}
-                        onChange={(e) => setAddForm((f) => ({ ...f, description: e.target.value }))}
-                        placeholder="보상 설명"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">가중치 *</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={addForm.weight}
-                        onChange={(e) => setAddForm((f) => ({ ...f, weight: Number(e.target.value) }))}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">재고</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={addForm.stock}
-                        onChange={(e) => setAddForm((f) => ({ ...f, stock: Number(e.target.value) }))}
-                      />
-                    </div>
-                  </div>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={addForm.allowDuplicateReward}
-                      onChange={(e) => setAddForm((f) => ({ ...f, allowDuplicateReward: e.target.checked }))}
-                    />
-                    중복 당첨 허용
-                  </label>
-                  {addError && <p className="text-sm text-destructive">{addError}</p>}
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleAddReward} disabled={adding}>
-                      {adding ? "저장 중..." : "저장"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => { setShowAddForm(false); setAddForm(emptyRewardForm); setAddError(null); }}
-                      disabled={adding}
-                    >
-                      취소
-                    </Button>
-                  </div>
-                </div>
+              {!showAddForm && (
+                <Button size="sm" variant="outline" className="gap-1" onClick={() => { setShowAddForm(true); setAddForm(emptyForm()); setAddError(null); }}>
+                  <Plus className="h-3.5 w-3.5" /> 추가
+                </Button>
               )}
-
-              {/* Reward list */}
+            </CardHeader>
+            <CardContent className="space-y-3 pt-2">
+              {showAddForm && (
+                <RewardFormCard
+                  formId="new"
+                  title="새 보상 추가"
+                  form={addForm}
+                  onChange={setAddForm}
+                  onSave={handleAddReward}
+                  onCancel={() => { setShowAddForm(false); setAddError(null); }}
+                  saving={adding}
+                  error={addError}
+                />
+              )}
               {rewardsLoading && (
                 <p className="text-center text-muted-foreground py-6 text-sm">불러오는 중...</p>
               )}
@@ -375,101 +418,110 @@ const ManageContent: React.FC = () => {
               {!rewardsLoading && !rewardsError && rewards.length === 0 && (
                 <p className="text-center text-muted-foreground py-6 text-sm">등록된 보상이 없습니다</p>
               )}
-              {!rewardsLoading && rewards.map((reward) =>
-                editingRewardId === reward.id ? (
-                  // Inline edit form
-                  <div key={reward.id} className="border rounded-md p-3 space-y-3 bg-muted/40">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs">이름 *</Label>
-                        <Input
-                          value={editRewardForm.name}
-                          onChange={(e) => setEditRewardForm((f) => ({ ...f, name: e.target.value }))}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">설명</Label>
-                        <Input
-                          value={editRewardForm.description}
-                          onChange={(e) => setEditRewardForm((f) => ({ ...f, description: e.target.value }))}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">가중치 *</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={editRewardForm.weight}
-                          onChange={(e) => setEditRewardForm((f) => ({ ...f, weight: Number(e.target.value) }))}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">재고</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={editRewardForm.stock}
-                          onChange={(e) => setEditRewardForm((f) => ({ ...f, stock: Number(e.target.value) }))}
-                        />
-                      </div>
-                    </div>
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editRewardForm.allowDuplicateReward}
-                        onChange={(e) => setEditRewardForm((f) => ({ ...f, allowDuplicateReward: e.target.checked }))}
-                      />
-                      중복 당첨 허용
-                    </label>
-                    {editRewardError && <p className="text-sm text-destructive">{editRewardError}</p>}
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={handleUpdateReward} disabled={editingReward}>
-                        {editingReward ? "저장 중..." : "저장"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => { setEditingRewardId(null); setEditRewardError(null); }}
-                        disabled={editingReward}
-                      >
-                        취소
-                      </Button>
-                    </div>
-                  </div>
+              {!rewardsLoading && rewards.map((r) =>
+                editingRewardId === r.id ? (
+                  <RewardFormCard
+                    key={r.id}
+                    formId={String(r.id)}
+                    title="보상 수정"
+                    form={editRewardForm}
+                    onChange={setEditRewardForm}
+                    onSave={handleUpdateReward}
+                    onCancel={() => { setEditingRewardId(null); setEditRewardError(null); }}
+                    saving={editingReward}
+                    error={editRewardError}
+                  />
                 ) : (
-                  // Reward row
-                  <div
-                    key={reward.id}
-                    className="flex items-center justify-between border rounded-md px-3 py-2 text-sm"
-                  >
-                    <div className="space-y-0.5 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium truncate">{reward.name}</p>
-                        {!reward.active && (
-                          <Badge variant="secondary" className="text-xs shrink-0">비활성</Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        가중치 {reward.weight}
-                        {reward.stock != null ? ` · 재고 ${reward.stock}` : ""}
-                        {reward.allowDuplicateReward ? " · 중복 허용" : ""}
-                      </p>
+                  <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
+                    <div className="shrink-0 w-12 h-12 rounded-md border border-dashed border-border bg-muted flex items-center justify-center overflow-hidden">
+                      {r.imageUrl ? (
+                        <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                      )}
                     </div>
-                    <div className="flex gap-1.5 shrink-0 ml-3">
-                      <Button size="sm" variant="outline" onClick={() => startEditReward(reward)}>
-                        수정
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground truncate">{r.name}</p>
+                        {!r.active && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">비활성</Badge>}
+                      </div>
+                      <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground flex-wrap">
+                        <span>가중치 <span className="font-medium text-foreground">{r.weight}</span></span>
+                        <span>재고 <span className="font-medium text-foreground">{r.stock == null ? "무제한" : `${r.stock}개`}</span></span>
+                        {r.allowDuplicateReward && <Badge variant="outline" className="text-[10px] px-1.5 py-0">중복허용</Badge>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditingRewardId(r.id); setEditRewardForm(fromApiReward(r)); setEditRewardError(null); }}>
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDeleteReward(reward.id)}
-                      >
-                        삭제
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDeleteReward(r.id)}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     </div>
                   </div>
                 )
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Codes (mock) ── */}
+        <TabsContent value="codes">
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="px-5 py-2">코드</th>
+                      <th className="px-5 py-2">닉네임</th>
+                      <th className="px-5 py-2">메모</th>
+                      <th className="px-5 py-2 text-center">남은 횟수</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mockInviteCodes.map((c) => (
+                      <tr key={c.id} className="border-b last:border-0">
+                        <td className="px-5 py-2.5 font-mono text-xs text-foreground">{c.code}</td>
+                        <td className="px-5 py-2.5 text-foreground">{c.nickname || "—"}</td>
+                        <td className="px-5 py-2.5 text-muted-foreground">{c.memo || "—"}</td>
+                        <td className="px-5 py-2.5 text-center">
+                          <Badge variant={c.remaining > 0 ? "default" : "secondary"}>{c.remaining}</Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Results (mock) ── */}
+        <TabsContent value="results">
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="px-5 py-2">코드</th>
+                      <th className="px-5 py-2">보상</th>
+                      <th className="px-5 py-2">시간</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mockResults.map((r) => (
+                      <tr key={r.id} className="border-b last:border-0">
+                        <td className="px-5 py-2.5 font-mono text-xs text-foreground">{r.code}</td>
+                        <td className="px-5 py-2.5 text-foreground">{r.reward}</td>
+                        <td className="px-5 py-2.5 text-muted-foreground">{r.drawnAt}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
