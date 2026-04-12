@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, Shuffle, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
-import type { ContentType } from "@/data/adminMockData";
+import { createAdminContent } from "@/api/client";
+
+type ContentType = "draw" | "quiz" | "messagebox";
 
 const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string }[] = [
   { value: "draw", label: "뽑기", icon: <Gift className="h-7 w-7" />, desc: "보상을 설정하고 참여자가 뽑기" },
@@ -39,6 +41,8 @@ const CreateContent: React.FC = () => {
   const [shareResult, setShareResult] = useState(false);
   const [rewards, setRewards] = useState<RewardRow[]>(initialRewards);
   const [codes, setCodes] = useState<CodeRow[]>(initialCodes);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const addReward = () => setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, stock: 10, imageUrl: "" }]);
   const removeReward = (id: number) => setRewards((r) => r.filter((x) => x.id !== id));
@@ -245,6 +249,9 @@ const CreateContent: React.FC = () => {
                 <Shuffle className="h-4 w-4" /> 코드 자동 생성
               </Button>
             </div>
+            {submitError && (
+              <p className="text-sm text-destructive">{submitError}</p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -259,7 +266,27 @@ const CreateContent: React.FC = () => {
             다음 <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         ) : (
-          <Button onClick={() => navigate("/admin")}>완료</Button>
+          <Button
+            onClick={async () => {
+              if (!contentType) return;
+              setSubmitting(true);
+              setSubmitError(null);
+              try {
+                await createAdminContent({
+                  type: contentType,
+                  title: title.trim(),
+                  description: description.trim(),
+                });
+                navigate("/admin");
+              } catch (e: any) {
+                setSubmitError(e.message ?? "콘텐츠 생성에 실패했습니다");
+                setSubmitting(false);
+              }
+            }}
+            disabled={submitting}
+          >
+            {submitting ? "생성 중..." : "완료"}
+          </Button>
         )}
       </div>
     </AdminLayout>

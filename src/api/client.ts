@@ -6,16 +6,41 @@ import type {
   DrawParticipantParams,
   RewardResponse,
   DrawResultResponse,
+  ParticipantContentDetailResponse,
+  AdminContentResponse,
+  AdminContentDetailResponse,
+  AdminContentCreateRequest,
+  AdminContentUpdateRequest,
+  AdminContentDeleteResponse,
+  UserInfo,
 } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
     this.name = "ApiError";
   }
 }
+
+// ── Auth token helpers ──────────────────────────────────────────────────────
+
+const AUTH_TOKEN_KEY = "auth_token";
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function setAuthToken(token: string): void {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+export function clearAuthToken(): void {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+// ── Base request helpers ────────────────────────────────────────────────────
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${url}`, {
@@ -66,4 +91,88 @@ export async function getResults(params: DrawParticipantParams): Promise<DrawRes
   return request<DrawResultResponse[]>(`/api/draw/results?${buildDrawQuery(params)}`);
 }
 
-export { ApiError };
+async function authRequest<T>(url: string, options?: RequestInit): Promise<T> {
+  const token = getAuthToken();
+  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+
+  const res = await fetch(`${API_BASE_URL}${url}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeader,
+    },
+    ...options,
+  });
+
+  if (!res.ok) {
+    throw new ApiError(res.status, `요청 실패 (${res.status})`);
+  }
+
+  const json: ApiResponse<T> = await res.json();
+
+  if (!json.success) {
+    throw new ApiError(400, json.message ?? "요청을 처리할 수 없습니다");
+  }
+
+  return json.data;
+}
+
+// ── Participant content detail ──────────────────────────────────────────────
+
+export async function getParticipantContentDetail(
+  contentCode: string
+): Promise<ParticipantContentDetailResponse> {
+  return request<ParticipantContentDetailResponse>(
+    `/api/draw/contents/${encodeURIComponent(contentCode)}`
+  );
+}
+
+// ── Admin Content API ───────────────────────────────────────────────────────
+
+export async function getAdminContents(): Promise<AdminContentResponse[]> {
+  return authRequest<AdminContentResponse[]>("/api/admin/contents");
+}
+
+export async function createAdminContent(
+  payload: AdminContentCreateRequest
+): Promise<AdminContentResponse> {
+  return authRequest<AdminContentResponse>("/api/admin/contents", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getAdminContentDetail(
+  contentCode: string
+): Promise<AdminContentDetailResponse> {
+  return authRequest<AdminContentDetailResponse>(
+    `/api/admin/contents/${encodeURIComponent(contentCode)}`
+  );
+}
+
+export async function updateAdminContent(
+  contentCode: string,
+  payload: AdminContentUpdateRequest
+): Promise<AdminContentResponse> {
+  return authRequest<AdminContentResponse>(
+    `/api/admin/contents/${encodeURIComponent(contentCode)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function deleteAdminContent(
+  contentCode: string
+): Promise<AdminContentDeleteResponse> {
+  return authRequest<AdminContentDeleteResponse>(
+    `/api/admin/contents/${encodeURIComponent(contentCode)}`,
+    { method: "DELETE" }
+  );
+}
+
+// ── User API ────────────────────────────────────────────────────────────────
+
+export async function getCurrentUser(): Promise<UserInfo> {
+  return authRequest<UserInfo>("/user");
+}

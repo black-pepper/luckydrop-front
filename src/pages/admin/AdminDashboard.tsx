@@ -1,22 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ContentCard from "@/components/admin/ContentCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle } from "lucide-react";
-import { mockContents, contentTypeLabel, contentStatusLabel } from "@/data/adminMockData";
-import type { ContentType, ContentStatus } from "@/data/adminMockData";
+import { getAdminContents } from "@/api/client";
+import type { AdminContentResponse } from "@/api/types";
+
+const typeLabel: Record<string, string> = {
+  draw: "뽑기",
+  quiz: "퀴즈",
+  messagebox: "메시지함",
+};
 
 const AdminDashboard: React.FC = () => {
-  const [typeFilter, setTypeFilter] = useState<ContentType | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<ContentStatus | "all">("all");
+  const [contents, setContents] = useState<AdminContentResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
-  const filtered = mockContents.filter((c) => {
-    if (typeFilter !== "all" && c.type !== typeFilter) return false;
-    if (statusFilter !== "all" && c.status !== statusFilter) return false;
-    return true;
-  });
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    getAdminContents()
+      .then(setContents)
+      .catch((e) => setError(e.message ?? "목록을 불러오지 못했습니다"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = contents.filter((c) => typeFilter === "all" || c.type === typeFilter);
+  const knownTypes = Array.from(new Set(contents.map((c) => c.type)));
 
   return (
     <AdminLayout>
@@ -33,26 +47,14 @@ const AdminDashboard: React.FC = () => {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-5">
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-36 bg-card">
             <SelectValue placeholder="콘텐츠 타입" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">전체 타입</SelectItem>
-            {(Object.keys(contentTypeLabel) as ContentType[]).map((k) => (
-              <SelectItem key={k} value={k}>{contentTypeLabel[k]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-          <SelectTrigger className="w-36 bg-card">
-            <SelectValue placeholder="상태" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">전체 상태</SelectItem>
-            {(Object.keys(contentStatusLabel) as ContentStatus[]).map((k) => (
-              <SelectItem key={k} value={k}>{contentStatusLabel[k]}</SelectItem>
+            {knownTypes.map((t) => (
+              <SelectItem key={t} value={t}>{typeLabel[t] ?? t}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -60,11 +62,18 @@ const AdminDashboard: React.FC = () => {
 
       {/* List */}
       <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground py-12">표시할 콘텐츠가 없습니다</p>
-        ) : (
-          filtered.map((item) => <ContentCard key={item.id} item={item} />)
+        {loading && (
+          <p className="text-center text-muted-foreground py-12">불러오는 중...</p>
         )}
+        {!loading && error && (
+          <p className="text-center text-destructive py-12">{error}</p>
+        )}
+        {!loading && !error && filtered.length === 0 && (
+          <p className="text-center text-muted-foreground py-12">표시할 콘텐츠가 없습니다</p>
+        )}
+        {!loading && !error && filtered.map((item) => (
+          <ContentCard key={item.code} item={item} />
+        ))}
       </div>
     </AdminLayout>
   );

@@ -49,3 +49,51 @@ export interface DrawResultResponse {
   drawNo: number;
   drawnAt: string; // ISO date-time
 }
+
+// GET /api/draw/contents/{contentCode}
+export interface ParticipantContentDetailResponse {
+  code: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: string;
+}
+
+// Admin content types
+export interface AdminContentResponse {
+  code: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface AdminContentDetailResponse {
+  code: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface AdminContentCreateRequest {
+  type: string;
+  title: string;
+  description: string;
+}
+
+export interface AdminContentUpdateRequest {
+  type: string;
+  title: string;
+  description: string;
+}
+
+export interface AdminContentDeleteResponse {
+  code: string;
+  deleted: boolean;
+}
+
+// GET /user
+export interface UserInfo {
+  name: string;
+}

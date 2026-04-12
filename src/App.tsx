@@ -27,7 +27,7 @@ const App = () => (
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/create" element={<CreateContent />} />
-          <Route path="/admin/manage/:id" element={<ManageContent />} />
+          <Route path="/admin/manage/:contentCode" element={<ManageContent />} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
