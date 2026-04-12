@@ -97,3 +97,42 @@ export interface AdminContentDeleteResponse {
 export interface UserInfo {
   name: string;
 }
+
+// Admin reward types
+// GET /api/admin/rewards?contentCode={contentCode}
+// GET /api/admin/rewards/{rewardId}
+export interface AdminRewardResponse {
+  id: number;
+  contentCode: string;
+  name: string;
+  description?: string;
+  weight: number;
+  stock?: number;
+  unlimited: boolean;
+  imageUrl?: string;
+  active: boolean;
+  allowDuplicateReward: boolean;
+  createdAt: string; // ISO date-time
+  updatedAt: string; // ISO date-time
+}
+
+// POST /api/admin/rewards
+export interface RewardCreateRequest {
+  contentCode: string;
+  name: string;
+  description?: string;
+  weight: number;
+  stock?: number;
+  imageUrl?: string;
+  allowDuplicateReward?: boolean;
+}
+
+// PUT /api/admin/rewards/{rewardId}
+export interface RewardUpdateRequest {
+  name: string;
+  description?: string;
+  weight: number;
+  stock?: number;
+  imageUrl?: string;
+  allowDuplicateReward?: boolean;
+}

@@ -11,13 +11,6 @@ export interface ContentItem {
   createdAt: string;
 }
 
-export interface MockReward {
-  id: string;
-  name: string;
-  weight: number;
-  stock: number;
-}
-
 export interface MockInviteCode {
   id: string;
   code: string;
@@ -56,14 +49,6 @@ export const mockContents: ContentItem[] = [
     status: "ended",
     createdAt: "2026-02-20",
   },
-];
-
-// ── Content‑detail mock (for manage page) ──
-export const mockRewards: MockReward[] = [
-  { id: "r1", name: "스타벅스 쿠폰", weight: 10, stock: 12 },
-  { id: "r2", name: "비타500", weight: 25, stock: 54 },
-  { id: "r3", name: "편의점 상품권", weight: 5, stock: 3 },
-  { id: "r4", name: "꽝", weight: 60, stock: 999 },
 ];
 
 export const mockInviteCodes: MockInviteCode[] = [

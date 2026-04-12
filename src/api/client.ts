@@ -13,6 +13,9 @@ import type {
   AdminContentUpdateRequest,
   AdminContentDeleteResponse,
   UserInfo,
+  AdminRewardResponse,
+  RewardCreateRequest,
+  RewardUpdateRequest,
 } from "./types";
 import { supabase } from "@/lib/supabase";
 
@@ -160,4 +163,37 @@ export async function deleteAdminContent(
 
 export async function getCurrentUser(): Promise<UserInfo> {
   return authRequest<UserInfo>("/user");
+}
+
+// ── Admin Reward API ────────────────────────────────────────────────────────
+
+export async function getAdminRewardsByContent(contentCode: string): Promise<AdminRewardResponse[]> {
+  return authRequest<AdminRewardResponse[]>(
+    `/api/admin/rewards?contentCode=${encodeURIComponent(contentCode)}`
+  );
+}
+
+export async function getAdminReward(rewardId: number): Promise<AdminRewardResponse> {
+  return authRequest<AdminRewardResponse>(`/api/admin/rewards/${rewardId}`);
+}
+
+export async function createAdminReward(payload: RewardCreateRequest): Promise<AdminRewardResponse> {
+  return authRequest<AdminRewardResponse>("/api/admin/rewards", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminReward(
+  rewardId: number,
+  payload: RewardUpdateRequest
+): Promise<AdminRewardResponse> {
+  return authRequest<AdminRewardResponse>(`/api/admin/rewards/${rewardId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminReward(rewardId: number): Promise<void> {
+  return authRequest<void>(`/api/admin/rewards/${rewardId}`, { method: "DELETE" });
 }

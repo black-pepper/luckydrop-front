@@ -27,3 +27,6 @@ luckydrop-ui/
 *.njsproj
 *.sln
 *.sw?
+
+# Others
+.claude/
