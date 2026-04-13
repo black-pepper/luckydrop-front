@@ -59,8 +59,8 @@ export interface ParticipantContentDetailResponse {
   createdAt: string;
 }
 
-// Admin content types
-export interface AdminContentResponse {
+// Manage content types
+export interface ManageContentResponse {
   code: string;
   type: string;
   title: string;
@@ -68,7 +68,7 @@ export interface AdminContentResponse {
   createdAt: string;
 }
 
-export interface AdminContentDetailResponse {
+export interface ManageContentDetailResponse {
   code: string;
   type: string;
   title: string;
@@ -76,19 +76,19 @@ export interface AdminContentDetailResponse {
   createdAt: string;
 }
 
-export interface AdminContentCreateRequest {
+export interface ManageContentCreateRequest {
   type: string;
   title: string;
   description: string;
 }
 
-export interface AdminContentUpdateRequest {
+export interface ManageContentUpdateRequest {
   type: string;
   title: string;
   description: string;
 }
 
-export interface AdminContentDeleteResponse {
+export interface ManageContentDeleteResponse {
   code: string;
   deleted: boolean;
 }
@@ -98,10 +98,10 @@ export interface UserInfo {
   name: string;
 }
 
-// Admin reward types
+// Manage reward types
 // GET /api/manage/rewards?contentCode={contentCode}
 // GET /api/manage/rewards/{rewardId}
-export interface AdminRewardResponse {
+export interface ManageRewardResponse {
   id: number;
   contentCode: string;
   name: string;

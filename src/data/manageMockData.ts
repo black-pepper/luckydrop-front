@@ -1,4 +1,4 @@
-// ─── Admin mock data (UI only, no real logic) ───
+// ─── Manage mock data (UI only, no real logic) ───
 
 export type ContentType = "draw" | "quiz" | "messagebox";
 export type ContentStatus = "active" | "ended";

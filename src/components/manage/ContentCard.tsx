@@ -4,10 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { AdminContentResponse } from "@/api/types";
+import type { ManageContentResponse } from "@/api/types";
 
 interface Props {
-  item: AdminContentResponse;
+  item: ManageContentResponse;
 }
 
 const typeColorMap: Record<string, string> = {
@@ -38,7 +38,7 @@ const ContentCard: React.FC<Props> = ({ item }) => (
         </div>
       </div>
 
-      <Link to={`/admin/manage/${item.code}`}>
+      <Link to={`/manage/${item.code}`}>
         <Button size="sm" variant="outline" className="gap-1.5">
           <Settings className="h-3.5 w-3.5" />
           관리

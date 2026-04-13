@@ -4,25 +4,25 @@ import { LayoutDashboard, PlusCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { to: "/admin", label: "대시보드", icon: LayoutDashboard },
-  { to: "/admin/create", label: "콘텐츠 만들기", icon: PlusCircle },
+  { to: "/manage", label: "대시보드", icon: LayoutDashboard },
+  { to: "/manage/create", label: "콘텐츠 만들기", icon: PlusCircle },
 ];
 
 interface Props {
   children: React.ReactNode;
 }
 
-const AdminLayout: React.FC<Props> = ({ children }) => {
+const ManageLayout: React.FC<Props> = ({ children }) => {
   const { pathname } = useLocation();
 
   return (
-    <div className="flex min-h-screen" style={{ background: "hsl(var(--admin-bg))" }}>
+    <div className="flex min-h-screen" style={{ background: "hsl(var(--manage-bg))" }}>
       {/* Sidebar */}
       <aside
         className="hidden md:flex flex-col w-56 shrink-0 p-4 gap-2"
-        style={{ background: "hsl(var(--admin-sidebar))", color: "hsl(var(--admin-sidebar-foreground))" }}
+        style={{ background: "hsl(var(--manage-sidebar))", color: "hsl(var(--manage-sidebar-foreground))" }}
       >
-        <Link to="/admin" className="text-lg font-bold px-3 py-4 tracking-tight">
+        <Link to="/manage" className="text-lg font-bold px-3 py-4 tracking-tight">
           🎯 LuckyDrop
         </Link>
 
@@ -55,9 +55,9 @@ const AdminLayout: React.FC<Props> = ({ children }) => {
 
       {/* Mobile header */}
       <div className="md:hidden fixed top-0 inset-x-0 z-30 flex items-center justify-between px-4 h-14 border-b"
-        style={{ background: "hsl(var(--admin-sidebar))", color: "hsl(var(--admin-sidebar-foreground))", borderColor: "hsl(var(--admin-border))" }}
+        style={{ background: "hsl(var(--manage-sidebar))", color: "hsl(var(--manage-sidebar-foreground))", borderColor: "hsl(var(--manage-border))" }}
       >
-        <Link to="/admin" className="font-bold text-base">🎯 LuckyDrop</Link>
+        <Link to="/manage" className="font-bold text-base">🎯 LuckyDrop</Link>
         <div className="flex gap-3">
           {navItems.map((item) => (
             <Link key={item.to} to={item.to} className="text-white/70 hover:text-white">
@@ -75,4 +75,4 @@ const AdminLayout: React.FC<Props> = ({ children }) => {
   );
 };
 
-export default AdminLayout;
+export default ManageLayout;

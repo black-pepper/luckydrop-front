@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import AdminLayout from "@/components/admin/AdminLayout";
+import ManageLayout from "@/components/manage/ManageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,16 +11,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus } from "lucide-react";
 import {
-  getAdminContentDetail,
-  updateAdminContent,
-  deleteAdminContent,
-  getAdminRewardsByContent,
-  createAdminReward,
-  updateAdminReward,
-  deleteAdminReward,
+  getManageContentDetail,
+  updateManageContent,
+  deleteManageContent,
+  getManageRewardsByContent,
+  createManageReward,
+  updateManageReward,
+  deleteManageReward,
 } from "@/api/client";
-import type { AdminContentDetailResponse, AdminRewardResponse } from "@/api/types";
-import { mockInviteCodes, mockResults } from "@/data/adminMockData";
+import type { ManageContentDetailResponse, ManageRewardResponse } from "@/api/types";
+import { mockInviteCodes, mockResults } from "@/data/manageMockData";
 
 // ── Local form type ─────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ const emptyForm = (): RewardFormState => ({
   unlimited: false, imageUrl: "", allowDuplicateReward: false,
 });
 
-const fromApiReward = (r: AdminRewardResponse): RewardFormState => ({
+const fromApiReward = (r: ManageRewardResponse): RewardFormState => ({
   name: r.name,
   description: r.description ?? "",
   weight: r.weight,
@@ -151,7 +151,7 @@ const ManageContent: React.FC = () => {
   const navigate = useNavigate();
 
   // Content state
-  const [content, setContent] = useState<AdminContentDetailResponse | null>(null);
+  const [content, setContent] = useState<ManageContentDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -166,7 +166,7 @@ const ManageContent: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
 
   // Rewards state
-  const [rewards, setRewards] = useState<AdminRewardResponse[]>([]);
+  const [rewards, setRewards] = useState<ManageRewardResponse[]>([]);
   const [rewardsLoading, setRewardsLoading] = useState(false);
   const [rewardsError, setRewardsError] = useState<string | null>(null);
 
@@ -186,7 +186,7 @@ const ManageContent: React.FC = () => {
     if (!contentCode) return;
     setLoading(true);
     setError(null);
-    getAdminContentDetail(contentCode)
+    getManageContentDetail(contentCode)
       .then((data) => {
         setContent(data);
         setEditTitle(data.title);
@@ -201,7 +201,7 @@ const ManageContent: React.FC = () => {
     if (!contentCode) return;
     setRewardsLoading(true);
     setRewardsError(null);
-    getAdminRewardsByContent(contentCode)
+    getManageRewardsByContent(contentCode)
       .then(setRewards)
       .catch((e) => setRewardsError(e.message ?? "보상 목록을 불러오지 못했습니다"))
       .finally(() => setRewardsLoading(false));
@@ -221,7 +221,7 @@ const ManageContent: React.FC = () => {
     setSaveError(null);
     setSaveSuccess(false);
     try {
-      const updated = await updateAdminContent(contentCode, {
+      const updated = await updateManageContent(contentCode, {
         type: editType,
         title: editTitle,
         description: editDescription,
@@ -241,8 +241,8 @@ const ManageContent: React.FC = () => {
     if (!window.confirm("정말 삭제하시겠습니까?")) return;
     setDeleting(true);
     try {
-      await deleteAdminContent(contentCode);
-      navigate("/admin");
+      await deleteManageContent(contentCode);
+      navigate("/manage");
     } catch (e: any) {
       alert(e.message ?? "삭제에 실패했습니다");
       setDeleting(false);
@@ -254,7 +254,7 @@ const ManageContent: React.FC = () => {
     setAdding(true);
     setAddError(null);
     try {
-      const created = await createAdminReward({
+      const created = await createManageReward({
         contentCode,
         name: addForm.name,
         weight: addForm.weight,
@@ -278,7 +278,7 @@ const ManageContent: React.FC = () => {
     setEditingReward(true);
     setEditRewardError(null);
     try {
-      const updated = await updateAdminReward(editingRewardId, {
+      const updated = await updateManageReward(editingRewardId, {
         name: editRewardForm.name,
         weight: editRewardForm.weight,
         stock: editRewardForm.unlimited ? undefined : editRewardForm.stock,
@@ -298,7 +298,7 @@ const ManageContent: React.FC = () => {
   const handleDeleteReward = async (rewardId: number) => {
     if (!window.confirm("보상을 삭제하시겠습니까?")) return;
     try {
-      await deleteAdminReward(rewardId);
+      await deleteManageReward(rewardId);
       setRewards((prev) => prev.filter((r) => r.id !== rewardId));
     } catch (e: any) {
       alert(e.message ?? "삭제에 실패했습니다");
@@ -306,19 +306,19 @@ const ManageContent: React.FC = () => {
   };
 
   if (loading) {
-    return <AdminLayout><p className="text-center text-muted-foreground py-20">불러오는 중...</p></AdminLayout>;
+    return <ManageLayout><p className="text-center text-muted-foreground py-20">불러오는 중...</p></ManageLayout>;
   }
 
   if (error || !content) {
-    return <AdminLayout><p className="text-center text-destructive py-20">{error ?? "콘텐츠를 찾을 수 없습니다"}</p></AdminLayout>;
+    return <ManageLayout><p className="text-center text-destructive py-20">{error ?? "콘텐츠를 찾을 수 없습니다"}</p></ManageLayout>;
   }
 
   return (
-    <AdminLayout>
+    <ManageLayout>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
-          <Link to="/admin">
+          <Link to="/manage">
             <Button size="icon" variant="ghost"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
           <div>
@@ -543,7 +543,7 @@ const ManageContent: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </AdminLayout>
+    </ManageLayout>
   );
 };
 

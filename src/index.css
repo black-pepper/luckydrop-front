@@ -45,16 +45,16 @@
     --shadow-soft: 0 4px 24px -4px hsl(340 65% 65% / 0.15);
     --shadow-card: 0 2px 16px -2px hsl(260 20% 50% / 0.1);
 
-    /* Admin tokens – calmer tone */
-    --admin-bg: 220 20% 97%;
-    --admin-sidebar: 220 25% 18%;
-    --admin-sidebar-foreground: 220 10% 90%;
-    --admin-accent: 220 60% 55%;
-    --admin-accent-foreground: 0 0% 100%;
-    --admin-muted: 220 15% 92%;
-    --admin-border: 220 15% 88%;
-    --admin-success: 145 55% 42%;
-    --admin-warning: 35 90% 55%;
+    /* Manage tokens – calmer tone */
+    --manage-bg: 220 20% 97%;
+    --manage-sidebar: 220 25% 18%;
+    --manage-sidebar-foreground: 220 10% 90%;
+    --manage-accent: 220 60% 55%;
+    --manage-accent-foreground: 0 0% 100%;
+    --manage-muted: 220 15% 92%;
+    --manage-border: 220 15% 88%;
+    --manage-success: 145 55% 42%;
+    --manage-warning: 35 90% 55%;
 
     font-family: 'Nunito', sans-serif;
   }

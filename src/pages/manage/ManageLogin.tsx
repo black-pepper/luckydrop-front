@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAccessTokenFromSession, isSupabaseConfigured, supabase } from "@/lib/supabase";
 
-const DEFAULT_REDIRECT_PATH = import.meta.env.VITE_ADMIN_LOGIN_REDIRECT_PATH ?? "/admin";
+const DEFAULT_REDIRECT_PATH = import.meta.env.VITE_MANAGE_LOGIN_REDIRECT_PATH ?? "/manage";
 const CALLBACK_EVENT_TYPES: AuthChangeEvent[] = ["INITIAL_SESSION", "SIGNED_IN", "TOKEN_REFRESHED"];
-const ADMIN_LOGIN_CALLBACK_URL =
-  import.meta.env.VITE_SUPABASE_REDIRECT_URL ?? new URL("/admin/login", window.location.origin).toString();
+const LOGIN_CALLBACK_URL =
+  import.meta.env.VITE_SUPABASE_REDIRECT_URL ?? new URL("/manage/login", window.location.origin).toString();
 
-const AdminLogin: React.FC = () => {
+const ManageLogin: React.FC = () => {
   const navigate = useNavigate();
   const navigatedTokenRef = React.useRef<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -106,7 +106,7 @@ const AdminLogin: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: ADMIN_LOGIN_CALLBACK_URL,
+          redirectTo: LOGIN_CALLBACK_URL,
         },
       });
 
@@ -123,7 +123,7 @@ const AdminLogin: React.FC = () => {
   return (
     <div
       className="flex items-center justify-center min-h-screen px-4"
-      style={{ background: "hsl(var(--admin-bg))" }}
+      style={{ background: "hsl(var(--manage-bg))" }}
     >
       <Card className="w-full max-w-sm text-center shadow-lg">
         <CardContent className="p-8 space-y-6">
@@ -180,4 +180,4 @@ const AdminLogin: React.FC = () => {
   );
 };
 
-export default AdminLogin;
+export default ManageLogin;

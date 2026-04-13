@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import AdminLayout from "@/components/admin/AdminLayout";
-import ContentCard from "@/components/admin/ContentCard";
+import ManageLayout from "@/components/manage/ManageLayout";
+import ContentCard from "@/components/manage/ContentCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle } from "lucide-react";
-import { getAdminContents } from "@/api/client";
-import type { AdminContentResponse } from "@/api/types";
+import { getManageContents } from "@/api/client";
+import type { ManageContentResponse } from "@/api/types";
 
 const typeLabel: Record<string, string> = {
   draw: "뽑기",
@@ -14,8 +14,8 @@ const typeLabel: Record<string, string> = {
   messagebox: "메시지함",
 };
 
-const AdminDashboard: React.FC = () => {
-  const [contents, setContents] = useState<AdminContentResponse[]>([]);
+const ManageDashboard: React.FC = () => {
+  const [contents, setContents] = useState<ManageContentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -23,7 +23,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    getAdminContents()
+    getManageContents()
       .then(setContents)
       .catch((e) => setError(e.message ?? "목록을 불러오지 못했습니다"))
       .finally(() => setLoading(false));
@@ -33,11 +33,11 @@ const AdminDashboard: React.FC = () => {
   const knownTypes = Array.from(new Set(contents.map((c) => c.type)));
 
   return (
-    <AdminLayout>
+    <ManageLayout>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-foreground">내 콘텐츠</h1>
-        <Link to="/admin/create">
+        <Link to="/manage/create">
           <Button className="gap-1.5">
             <PlusCircle className="h-4 w-4" />
             새 콘텐츠 만들기
@@ -75,8 +75,8 @@ const AdminDashboard: React.FC = () => {
           <ContentCard key={item.code} item={item} />
         ))}
       </div>
-    </AdminLayout>
+    </ManageLayout>
   );
 };
 
-export default AdminDashboard;
+export default ManageDashboard;

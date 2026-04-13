@@ -6,10 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import CreateContent from "./pages/admin/CreateContent";
-import ManageContent from "./pages/admin/ManageContent";
+import ManageLogin from "./pages/manage/ManageLogin";
+import ManageDashboard from "./pages/manage/ManageDashboard";
+import CreateContent from "./pages/manage/CreateContent";
+import ManageContent from "./pages/manage/ManageContent";
 
 const queryClient = new QueryClient();
 
@@ -23,11 +23,11 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/draw" element={<Index />} />
 
-          {/* Admin routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/create" element={<CreateContent />} />
-          <Route path="/admin/manage/:contentCode" element={<ManageContent />} />
+          {/* Manage routes */}
+          <Route path="/manage/login" element={<ManageLogin />} />
+          <Route path="/manage" element={<ManageDashboard />} />
+          <Route path="/manage/create" element={<CreateContent />} />
+          <Route path="/manage/:contentCode" element={<ManageContent />} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

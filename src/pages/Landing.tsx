@@ -27,7 +27,7 @@ const LandingHeader = () => {
               {l.label}
             </a>
           ))}
-          <Button size="sm" variant="outline" onClick={() => navigate("/admin/login")}>
+          <Button size="sm" variant="outline" onClick={() => navigate("/manage/login")}>
             로그인
           </Button>
         </nav>
@@ -46,7 +46,7 @@ const LandingHeader = () => {
               {l.label}
             </a>
           ))}
-          <Button size="sm" variant="outline" className="w-full" onClick={() => navigate("/admin/login")}>
+          <Button size="sm" variant="outline" className="w-full" onClick={() => navigate("/manage/login")}>
             로그인
           </Button>
         </div>
@@ -74,7 +74,7 @@ const HeroSection = () => {
         <Button size="lg" className="w-full sm:w-auto gap-2" onClick={() => navigate("/draw")}>
           <KeyRound size={18} /> 코드로 참여하기
         </Button>
-        <Button size="lg" variant="secondary" className="w-full sm:w-auto gap-2" onClick={() => navigate("/admin/login")}>
+        <Button size="lg" variant="secondary" className="w-full sm:w-auto gap-2" onClick={() => navigate("/manage/login")}>
           <Settings size={18} /> 주최자로 시작하기
         </Button>
       </div>
@@ -103,7 +103,7 @@ const RoleEntrySection = () => {
       cta: "콘텐츠 만들기",
       icon: <Settings size={28} />,
       style: "bg-[hsl(var(--sky)/0.25)] border-[hsl(var(--sky))]",
-      onClick: () => navigate("/admin/login"),
+      onClick: () => navigate("/manage/login"),
     },
   ];
 
@@ -204,7 +204,7 @@ const BottomCTA = () => {
       <p className="text-muted-foreground text-sm mb-8 max-w-sm mx-auto">이벤트를 만들거나, 코드를 입력해 참여할 수 있어요.</p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Button size="lg" className="w-full sm:w-auto" onClick={() => navigate("/draw")}>코드로 참여하기</Button>
-        <Button size="lg" variant="secondary" className="w-full sm:w-auto" onClick={() => navigate("/admin/login")}>이벤트 만들기</Button>
+        <Button size="lg" variant="secondary" className="w-full sm:w-auto" onClick={() => navigate("/manage/login")}>이벤트 만들기</Button>
       </div>
     </section>
   );

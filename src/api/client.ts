@@ -7,13 +7,13 @@ import type {
   RewardResponse,
   DrawResultResponse,
   ParticipantContentDetailResponse,
-  AdminContentResponse,
-  AdminContentDetailResponse,
-  AdminContentCreateRequest,
-  AdminContentUpdateRequest,
-  AdminContentDeleteResponse,
+  ManageContentResponse,
+  ManageContentDetailResponse,
+  ManageContentCreateRequest,
+  ManageContentUpdateRequest,
+  ManageContentDeleteResponse,
   UserInfo,
-  AdminRewardResponse,
+  ManageRewardResponse,
   RewardCreateRequest,
   RewardUpdateRequest,
 } from "./types";
@@ -114,34 +114,34 @@ export async function getParticipantContentDetail(
   );
 }
 
-// ── Admin Content API ───────────────────────────────────────────────────────
+// ── Manage Content API ─────────────────────────────────────────────────────
 
-export async function getAdminContents(): Promise<AdminContentResponse[]> {
-  return authRequest<AdminContentResponse[]>("/api/manage/contents");
+export async function getManageContents(): Promise<ManageContentResponse[]> {
+  return authRequest<ManageContentResponse[]>("/api/manage/contents");
 }
 
-export async function createAdminContent(
-  payload: AdminContentCreateRequest
-): Promise<AdminContentResponse> {
-  return authRequest<AdminContentResponse>("/api/manage/contents", {
+export async function createManageContent(
+  payload: ManageContentCreateRequest
+): Promise<ManageContentResponse> {
+  return authRequest<ManageContentResponse>("/api/manage/contents", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export async function getAdminContentDetail(
+export async function getManageContentDetail(
   contentCode: string
-): Promise<AdminContentDetailResponse> {
-  return authRequest<AdminContentDetailResponse>(
+): Promise<ManageContentDetailResponse> {
+  return authRequest<ManageContentDetailResponse>(
     `/api/manage/contents/${encodeURIComponent(contentCode)}`
   );
 }
 
-export async function updateAdminContent(
+export async function updateManageContent(
   contentCode: string,
-  payload: AdminContentUpdateRequest
-): Promise<AdminContentResponse> {
-  return authRequest<AdminContentResponse>(
+  payload: ManageContentUpdateRequest
+): Promise<ManageContentResponse> {
+  return authRequest<ManageContentResponse>(
     `/api/manage/contents/${encodeURIComponent(contentCode)}`,
     {
       method: "PUT",
@@ -150,10 +150,10 @@ export async function updateAdminContent(
   );
 }
 
-export async function deleteAdminContent(
+export async function deleteManageContent(
   contentCode: string
-): Promise<AdminContentDeleteResponse> {
-  return authRequest<AdminContentDeleteResponse>(
+): Promise<ManageContentDeleteResponse> {
+  return authRequest<ManageContentDeleteResponse>(
     `/api/manage/contents/${encodeURIComponent(contentCode)}`,
     { method: "DELETE" }
   );
@@ -165,35 +165,35 @@ export async function getCurrentUser(): Promise<UserInfo> {
   return authRequest<UserInfo>("/user");
 }
 
-// ── Admin Reward API ────────────────────────────────────────────────────────
+// ── Manage Reward API ──────────────────────────────────────────────────────
 
-export async function getAdminRewardsByContent(contentCode: string): Promise<AdminRewardResponse[]> {
-  return authRequest<AdminRewardResponse[]>(
+export async function getManageRewardsByContent(contentCode: string): Promise<ManageRewardResponse[]> {
+  return authRequest<ManageRewardResponse[]>(
     `/api/manage/rewards?contentCode=${encodeURIComponent(contentCode)}`
   );
 }
 
-export async function getAdminReward(rewardId: number): Promise<AdminRewardResponse> {
-  return authRequest<AdminRewardResponse>(`/api/manage/rewards/${rewardId}`);
+export async function getManageReward(rewardId: number): Promise<ManageRewardResponse> {
+  return authRequest<ManageRewardResponse>(`/api/manage/rewards/${rewardId}`);
 }
 
-export async function createAdminReward(payload: RewardCreateRequest): Promise<AdminRewardResponse> {
-  return authRequest<AdminRewardResponse>("/api/manage/rewards", {
+export async function createManageReward(payload: RewardCreateRequest): Promise<ManageRewardResponse> {
+  return authRequest<ManageRewardResponse>("/api/manage/rewards", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
-export async function updateAdminReward(
+export async function updateManageReward(
   rewardId: number,
   payload: RewardUpdateRequest
-): Promise<AdminRewardResponse> {
-  return authRequest<AdminRewardResponse>(`/api/manage/rewards/${rewardId}`, {
+): Promise<ManageRewardResponse> {
+  return authRequest<ManageRewardResponse>(`/api/manage/rewards/${rewardId}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
 }
 
-export async function deleteAdminReward(rewardId: number): Promise<void> {
+export async function deleteManageReward(rewardId: number): Promise<void> {
   return authRequest<void>(`/api/manage/rewards/${rewardId}`, { method: "DELETE" });
 }

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AdminLayout from "@/components/admin/AdminLayout";
+import ManageLayout from "@/components/manage/ManageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, Shuffle, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
-import { createAdminContent, createAdminReward } from "@/api/client";
-import type { ContentType } from "@/data/adminMockData";
+import { createManageContent, createManageReward } from "@/api/client";
+import type { ContentType } from "@/data/manageMockData";
 
 const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string }[] = [
   { value: "draw", label: "뽑기", icon: <Gift className="h-7 w-7" />, desc: "보상을 설정하고 참여자가 뽑기" },
@@ -81,14 +81,14 @@ const CreateContent: React.FC = () => {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const created = await createAdminContent({
+      const created = await createManageContent({
         type: contentType,
         title: title.trim(),
         description: description.trim(),
       });
       await Promise.all(
         rewards.map((r) =>
-          createAdminReward({
+          createManageReward({
             contentCode: created.code,
             name: r.name,
             weight: r.weight,
@@ -98,7 +98,7 @@ const CreateContent: React.FC = () => {
           })
         )
       );
-      navigate("/admin");
+      navigate("/manage");
     } catch (e: any) {
       setSubmitError(e.message ?? "콘텐츠 생성에 실패했습니다");
       setSubmitting(false);
@@ -106,7 +106,7 @@ const CreateContent: React.FC = () => {
   };
 
   return (
-    <AdminLayout>
+    <ManageLayout>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">콘텐츠 만들기</h1>
         <div className="flex items-center gap-2 mt-3">
@@ -320,7 +320,7 @@ const CreateContent: React.FC = () => {
           </Button>
         )}
       </div>
-    </AdminLayout>
+    </ManageLayout>
   );
 };
 

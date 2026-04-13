@@ -5,7 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;
   readonly VITE_SUPABASE_REDIRECT_URL?: string;
-  readonly VITE_ADMIN_LOGIN_REDIRECT_PATH?: string;
+  readonly VITE_MANAGE_LOGIN_REDIRECT_PATH?: string;
 }
 
 interface ImportMeta {
