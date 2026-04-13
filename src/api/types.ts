@@ -99,8 +99,8 @@ export interface UserInfo {
 }
 
 // Admin reward types
-// GET /api/admin/rewards?contentCode={contentCode}
-// GET /api/admin/rewards/{rewardId}
+// GET /api/manage/rewards?contentCode={contentCode}
+// GET /api/manage/rewards/{rewardId}
 export interface AdminRewardResponse {
   id: number;
   contentCode: string;
@@ -116,7 +116,7 @@ export interface AdminRewardResponse {
   updatedAt: string; // ISO date-time
 }
 
-// POST /api/admin/rewards
+// POST /api/manage/rewards
 export interface RewardCreateRequest {
   contentCode: string;
   name: string;
@@ -127,7 +127,7 @@ export interface RewardCreateRequest {
   allowDuplicateReward?: boolean;
 }
 
-// PUT /api/admin/rewards/{rewardId}
+// PUT /api/manage/rewards/{rewardId}
 export interface RewardUpdateRequest {
   name: string;
   description?: string;

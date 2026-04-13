@@ -117,13 +117,13 @@ export async function getParticipantContentDetail(
 // ── Admin Content API ───────────────────────────────────────────────────────
 
 export async function getAdminContents(): Promise<AdminContentResponse[]> {
-  return authRequest<AdminContentResponse[]>("/api/admin/contents");
+  return authRequest<AdminContentResponse[]>("/api/manage/contents");
 }
 
 export async function createAdminContent(
   payload: AdminContentCreateRequest
 ): Promise<AdminContentResponse> {
-  return authRequest<AdminContentResponse>("/api/admin/contents", {
+  return authRequest<AdminContentResponse>("/api/manage/contents", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -133,7 +133,7 @@ export async function getAdminContentDetail(
   contentCode: string
 ): Promise<AdminContentDetailResponse> {
   return authRequest<AdminContentDetailResponse>(
-    `/api/admin/contents/${encodeURIComponent(contentCode)}`
+    `/api/manage/contents/${encodeURIComponent(contentCode)}`
   );
 }
 
@@ -142,7 +142,7 @@ export async function updateAdminContent(
   payload: AdminContentUpdateRequest
 ): Promise<AdminContentResponse> {
   return authRequest<AdminContentResponse>(
-    `/api/admin/contents/${encodeURIComponent(contentCode)}`,
+    `/api/manage/contents/${encodeURIComponent(contentCode)}`,
     {
       method: "PUT",
       body: JSON.stringify(payload),
@@ -154,7 +154,7 @@ export async function deleteAdminContent(
   contentCode: string
 ): Promise<AdminContentDeleteResponse> {
   return authRequest<AdminContentDeleteResponse>(
-    `/api/admin/contents/${encodeURIComponent(contentCode)}`,
+    `/api/manage/contents/${encodeURIComponent(contentCode)}`,
     { method: "DELETE" }
   );
 }
@@ -169,16 +169,16 @@ export async function getCurrentUser(): Promise<UserInfo> {
 
 export async function getAdminRewardsByContent(contentCode: string): Promise<AdminRewardResponse[]> {
   return authRequest<AdminRewardResponse[]>(
-    `/api/admin/rewards?contentCode=${encodeURIComponent(contentCode)}`
+    `/api/manage/rewards?contentCode=${encodeURIComponent(contentCode)}`
   );
 }
 
 export async function getAdminReward(rewardId: number): Promise<AdminRewardResponse> {
-  return authRequest<AdminRewardResponse>(`/api/admin/rewards/${rewardId}`);
+  return authRequest<AdminRewardResponse>(`/api/manage/rewards/${rewardId}`);
 }
 
 export async function createAdminReward(payload: RewardCreateRequest): Promise<AdminRewardResponse> {
-  return authRequest<AdminRewardResponse>("/api/admin/rewards", {
+  return authRequest<AdminRewardResponse>("/api/manage/rewards", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -188,12 +188,12 @@ export async function updateAdminReward(
   rewardId: number,
   payload: RewardUpdateRequest
 ): Promise<AdminRewardResponse> {
-  return authRequest<AdminRewardResponse>(`/api/admin/rewards/${rewardId}`, {
+  return authRequest<AdminRewardResponse>(`/api/manage/rewards/${rewardId}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
 }
 
 export async function deleteAdminReward(rewardId: number): Promise<void> {
-  return authRequest<void>(`/api/admin/rewards/${rewardId}`, { method: "DELETE" });
+  return authRequest<void>(`/api/manage/rewards/${rewardId}`, { method: "DELETE" });
 }
