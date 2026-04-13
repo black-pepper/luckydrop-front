@@ -18,9 +18,10 @@ import {
   createManageReward,
   updateManageReward,
   deleteManageReward,
+  getManageInvitationCodesByContent,
 } from "@/api/client";
-import type { ManageContentDetailResponse, ManageRewardResponse } from "@/api/types";
-import { mockInviteCodes, mockResults } from "@/data/manageMockData";
+import type { ManageContentDetailResponse, ManageRewardResponse, ManageInvitationCodeResponse } from "@/api/types";
+import { mockResults } from "@/data/manageMockData";
 
 // ── Local form type ─────────────────────────────────────────────────────────
 
@@ -182,6 +183,11 @@ const ManageContent: React.FC = () => {
   const [editingReward, setEditingReward] = useState(false);
   const [editRewardError, setEditRewardError] = useState<string | null>(null);
 
+  // Invitation codes state
+  const [inviteCodes, setInviteCodes] = useState<ManageInvitationCodeResponse[]>([]);
+  const [inviteCodesLoading, setInviteCodesLoading] = useState(false);
+  const [inviteCodesError, setInviteCodesError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!contentCode) return;
     setLoading(true);
@@ -205,6 +211,16 @@ const ManageContent: React.FC = () => {
       .then(setRewards)
       .catch((e) => setRewardsError(e.message ?? "보상 목록을 불러오지 못했습니다"))
       .finally(() => setRewardsLoading(false));
+  }, [contentCode]);
+
+  useEffect(() => {
+    if (!contentCode) return;
+    setInviteCodesLoading(true);
+    setInviteCodesError(null);
+    getManageInvitationCodesByContent(contentCode)
+      .then(setInviteCodes)
+      .catch((e) => setInviteCodesError(e.message ?? "추첨 코드 목록을 불러오지 못했습니다"))
+      .finally(() => setInviteCodesLoading(false));
   }, [contentCode]);
 
   const shareLink = `${window.location.origin}/draw?contentCode=${contentCode}`;
@@ -466,34 +482,47 @@ const ManageContent: React.FC = () => {
           </Card>
         </TabsContent>
 
-        {/* ── Codes (mock) ── */}
+        {/* ── Codes ── */}
         <TabsContent value="codes">
           <Card>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-muted-foreground">
-                      <th className="px-5 py-2">코드</th>
-                      <th className="px-5 py-2">닉네임</th>
-                      <th className="px-5 py-2">메모</th>
-                      <th className="px-5 py-2 text-center">남은 횟수</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockInviteCodes.map((c) => (
-                      <tr key={c.id} className="border-b last:border-0">
-                        <td className="px-5 py-2.5 font-mono text-xs text-foreground">{c.code}</td>
-                        <td className="px-5 py-2.5 text-foreground">{c.nickname || "—"}</td>
-                        <td className="px-5 py-2.5 text-muted-foreground">{c.memo || "—"}</td>
-                        <td className="px-5 py-2.5 text-center">
-                          <Badge variant={c.remaining > 0 ? "default" : "secondary"}>{c.remaining}</Badge>
-                        </td>
+              {inviteCodesLoading && (
+                <p className="text-center text-muted-foreground py-6 text-sm">불러오는 중...</p>
+              )}
+              {!inviteCodesLoading && inviteCodesError && (
+                <p className="text-center text-destructive py-6 text-sm">{inviteCodesError}</p>
+              )}
+              {!inviteCodesLoading && !inviteCodesError && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-muted-foreground">
+                        <th className="px-5 py-2">코드</th>
+                        <th className="px-5 py-2">닉네임</th>
+                        <th className="px-5 py-2">메모</th>
+                        <th className="px-5 py-2 text-center">남은 횟수</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {inviteCodes.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-5 py-6 text-center text-muted-foreground">등록된 추첨 코드가 없습니다</td>
+                        </tr>
+                      )}
+                      {inviteCodes.map((c) => (
+                        <tr key={c.id} className="border-b last:border-0">
+                          <td className="px-5 py-2.5 font-mono text-xs text-foreground">{c.code}</td>
+                          <td className="px-5 py-2.5 text-foreground">{c.nickname || "—"}</td>
+                          <td className="px-5 py-2.5 text-muted-foreground">{c.memo || "—"}</td>
+                          <td className="px-5 py-2.5 text-center">
+                            <Badge variant={c.remainingCount > 0 ? "default" : "secondary"}>{c.remainingCount}</Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
