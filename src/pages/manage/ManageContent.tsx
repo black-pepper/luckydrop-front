@@ -19,11 +19,32 @@ import {
   updateManageReward,
   deleteManageReward,
   getManageInvitationCodesByContent,
+  createManageInvitationCode,
+  updateManageInvitationCode,
+  deleteManageInvitationCode,
 } from "@/api/client";
 import type { ManageContentDetailResponse, ManageRewardResponse, ManageInvitationCodeResponse } from "@/api/types";
 import { mockResults } from "@/data/manageMockData";
 
-// ── Local form type ─────────────────────────────────────────────────────────
+// ── Local form types ────────────────────────────────────────────────────────
+
+interface InvitationCodeFormState {
+  code: string;
+  nickname: string;
+  memo: string;
+  maxDrawCount: number;
+}
+
+const emptyCodeForm = (): InvitationCodeFormState => ({
+  code: "", nickname: "", memo: "", maxDrawCount: 1,
+});
+
+const fromApiCode = (c: ManageInvitationCodeResponse): InvitationCodeFormState => ({
+  code: c.code,
+  nickname: c.nickname ?? "",
+  memo: c.memo ?? "",
+  maxDrawCount: c.maxDrawCount,
+});
 
 interface RewardFormState {
   name: string;
@@ -139,6 +160,51 @@ const RewardFormCard: React.FC<{
   </Card>
 );
 
+// ── InvitationCodeFormCard ──────────────────────────────────────────────────
+
+const InvitationCodeFormCard: React.FC<{
+  title: string;
+  form: InvitationCodeFormState;
+  onChange: (f: InvitationCodeFormState) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  saving?: boolean;
+  error?: string | null;
+}> = ({ title, form, onChange, onSave, onCancel, saving, error }) => (
+  <Card className="border border-primary/30 bg-muted/20">
+    <CardContent className="p-4 space-y-3">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <div className="space-y-1.5">
+        <Label className="text-sm">코드</Label>
+        <Input placeholder="예: LUCKY-001" value={form.code} onChange={(e) => onChange({ ...form, code: e.target.value })} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-sm">닉네임</Label>
+          <Input placeholder="참여자 닉네임" value={form.nickname} onChange={(e) => onChange({ ...form, nickname: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm">최대 뽑기 횟수</Label>
+          <Input type="number" placeholder="1" value={form.maxDrawCount} onChange={(e) => onChange({ ...form, maxDrawCount: Number(e.target.value) })} />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-sm">메모</Label>
+        <Input placeholder="메모 (선택)" value={form.memo} onChange={(e) => onChange({ ...form, memo: e.target.value })} />
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" className="gap-1" onClick={onSave} disabled={saving}>
+          <Check className="h-3.5 w-3.5" /> {saving ? "저장 중..." : "저장"}
+        </Button>
+        <Button size="sm" variant="outline" className="gap-1" onClick={onCancel} disabled={saving}>
+          <X className="h-3.5 w-3.5" /> 취소
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 // ── ManageContent ───────────────────────────────────────────────────────────
 
 const typeLabel: Record<string, string> = {
@@ -187,6 +253,18 @@ const ManageContent: React.FC = () => {
   const [inviteCodes, setInviteCodes] = useState<ManageInvitationCodeResponse[]>([]);
   const [inviteCodesLoading, setInviteCodesLoading] = useState(false);
   const [inviteCodesError, setInviteCodesError] = useState<string | null>(null);
+
+  // Add invitation code form
+  const [showAddCodeForm, setShowAddCodeForm] = useState(false);
+  const [addCodeForm, setAddCodeForm] = useState<InvitationCodeFormState>(emptyCodeForm());
+  const [addingCode, setAddingCode] = useState(false);
+  const [addCodeError, setAddCodeError] = useState<string | null>(null);
+
+  // Edit invitation code form
+  const [editingCodeId, setEditingCodeId] = useState<number | null>(null);
+  const [editCodeForm, setEditCodeForm] = useState<InvitationCodeFormState>(emptyCodeForm());
+  const [editingCode, setEditingCode] = useState(false);
+  const [editCodeError, setEditCodeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!contentCode) return;
@@ -316,6 +394,58 @@ const ManageContent: React.FC = () => {
     try {
       await deleteManageReward(rewardId);
       setRewards((prev) => prev.filter((r) => r.id !== rewardId));
+    } catch (e: any) {
+      alert(e.message ?? "삭제에 실패했습니다");
+    }
+  };
+
+  const handleAddCode = async () => {
+    if (!contentCode) return;
+    setAddingCode(true);
+    setAddCodeError(null);
+    try {
+      const created = await createManageInvitationCode({
+        contentCode,
+        code: addCodeForm.code,
+        nickname: addCodeForm.nickname || undefined,
+        memo: addCodeForm.memo || undefined,
+        maxDrawCount: addCodeForm.maxDrawCount,
+      });
+      setInviteCodes((prev) => [...prev, created]);
+      setShowAddCodeForm(false);
+      setAddCodeForm(emptyCodeForm());
+    } catch (e: any) {
+      setAddCodeError(e.message ?? "추첨 코드 추가에 실패했습니다");
+    } finally {
+      setAddingCode(false);
+    }
+  };
+
+  const handleUpdateCode = async () => {
+    if (editingCodeId == null) return;
+    setEditingCode(true);
+    setEditCodeError(null);
+    try {
+      const updated = await updateManageInvitationCode(editingCodeId, {
+        code: editCodeForm.code || undefined,
+        nickname: editCodeForm.nickname || undefined,
+        memo: editCodeForm.memo || undefined,
+        maxDrawCount: editCodeForm.maxDrawCount,
+      });
+      setInviteCodes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      setEditingCodeId(null);
+    } catch (e: any) {
+      setEditCodeError(e.message ?? "수정에 실패했습니다");
+    } finally {
+      setEditingCode(false);
+    }
+  };
+
+  const handleDeleteCode = async (invitationCodeId: number) => {
+    if (!window.confirm("추첨 코드를 삭제하시겠습니까?")) return;
+    try {
+      await deleteManageInvitationCode(invitationCodeId);
+      setInviteCodes((prev) => prev.filter((c) => c.id !== invitationCodeId));
     } catch (e: any) {
       alert(e.message ?? "삭제에 실패했습니다");
     }
@@ -485,7 +615,26 @@ const ManageContent: React.FC = () => {
         {/* ── Codes ── */}
         <TabsContent value="codes">
           <Card>
-            <CardContent className="p-0">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base">추첨 코드 목록</CardTitle>
+              {!showAddCodeForm && (
+                <Button size="sm" variant="outline" className="gap-1" onClick={() => { setShowAddCodeForm(true); setAddCodeForm(emptyCodeForm()); setAddCodeError(null); }}>
+                  <Plus className="h-3.5 w-3.5" /> 추가
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3 pt-2">
+              {showAddCodeForm && (
+                <InvitationCodeFormCard
+                  title="새 추첨 코드 추가"
+                  form={addCodeForm}
+                  onChange={setAddCodeForm}
+                  onSave={handleAddCode}
+                  onCancel={() => { setShowAddCodeForm(false); setAddCodeError(null); }}
+                  saving={addingCode}
+                  error={addCodeError}
+                />
+              )}
               {inviteCodesLoading && (
                 <p className="text-center text-muted-foreground py-6 text-sm">불러오는 중...</p>
               )}
@@ -501,24 +650,51 @@ const ManageContent: React.FC = () => {
                         <th className="px-5 py-2">닉네임</th>
                         <th className="px-5 py-2">메모</th>
                         <th className="px-5 py-2 text-center">남은 횟수</th>
+                        <th className="px-5 py-2" />
                       </tr>
                     </thead>
                     <tbody>
                       {inviteCodes.length === 0 && (
                         <tr>
-                          <td colSpan={4} className="px-5 py-6 text-center text-muted-foreground">등록된 추첨 코드가 없습니다</td>
+                          <td colSpan={5} className="px-5 py-6 text-center text-muted-foreground">등록된 추첨 코드가 없습니다</td>
                         </tr>
                       )}
-                      {inviteCodes.map((c) => (
-                        <tr key={c.id} className="border-b last:border-0">
-                          <td className="px-5 py-2.5 font-mono text-xs text-foreground">{c.code}</td>
-                          <td className="px-5 py-2.5 text-foreground">{c.nickname || "—"}</td>
-                          <td className="px-5 py-2.5 text-muted-foreground">{c.memo || "—"}</td>
-                          <td className="px-5 py-2.5 text-center">
-                            <Badge variant={c.remainingCount > 0 ? "default" : "secondary"}>{c.remainingCount}</Badge>
-                          </td>
-                        </tr>
-                      ))}
+                      {inviteCodes.map((c) =>
+                        editingCodeId === c.id ? (
+                          <tr key={c.id}>
+                            <td colSpan={5} className="px-3 py-2">
+                              <InvitationCodeFormCard
+                                title="추첨 코드 수정"
+                                form={editCodeForm}
+                                onChange={setEditCodeForm}
+                                onSave={handleUpdateCode}
+                                onCancel={() => { setEditingCodeId(null); setEditCodeError(null); }}
+                                saving={editingCode}
+                                error={editCodeError}
+                              />
+                            </td>
+                          </tr>
+                        ) : (
+                          <tr key={c.id} className="border-b last:border-0">
+                            <td className="px-5 py-2.5 font-mono text-xs text-foreground">{c.code}</td>
+                            <td className="px-5 py-2.5 text-foreground">{c.nickname || "—"}</td>
+                            <td className="px-5 py-2.5 text-muted-foreground">{c.memo || "—"}</td>
+                            <td className="px-5 py-2.5 text-center">
+                              <Badge variant={c.remainingCount > 0 ? "default" : "secondary"}>{c.remainingCount}</Badge>
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex gap-1 justify-end">
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingCodeId(c.id); setEditCodeForm(fromApiCode(c)); setEditCodeError(null); }}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDeleteCode(c.id)}>
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      )}
                     </tbody>
                   </table>
                 </div>
