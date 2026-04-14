@@ -136,3 +136,38 @@ export interface RewardUpdateRequest {
   imageUrl?: string;
   allowDuplicateReward?: boolean;
 }
+
+// Manage invitation code (추첨 코드) types
+// GET /api/manage/invitation-codes?contentCode={contentCode}
+// GET /api/manage/invitation-codes/{invitationCodeId}
+export interface ManageInvitationCodeResponse {
+  id: number;
+  contentCode: string;
+  code: string;
+  name?: string;
+  allowedDrawCount: number;
+  usedDrawCount: number;
+  remainingCount: number;
+  active: boolean;
+  expiresAt?: string; // ISO date-time
+  lastUsedAt?: string; // ISO date-time
+  createdAt: string; // ISO date-time
+  updatedAt: string; // ISO date-time
+}
+
+// POST /api/manage/invitation-codes
+export interface InvitationCodeCreateRequest {
+  contentCode: string;
+  code: string;
+  name?: string;
+  allowedDrawCount: number;
+  expiresAt?: string; // ISO date-time
+}
+
+// PUT /api/manage/invitation-codes/{invitationCodeId}
+export interface InvitationCodeUpdateRequest {
+  name?: string;
+  allowedDrawCount: number;
+  expiresAt?: string; // ISO date-time
+  active: boolean;
+}

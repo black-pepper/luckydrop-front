@@ -16,6 +16,9 @@ import type {
   ManageRewardResponse,
   RewardCreateRequest,
   RewardUpdateRequest,
+  ManageInvitationCodeResponse,
+  InvitationCodeCreateRequest,
+  InvitationCodeUpdateRequest,
 } from "./types";
 import { supabase } from "@/lib/supabase";
 
@@ -196,4 +199,37 @@ export async function updateManageReward(
 
 export async function deleteManageReward(rewardId: number): Promise<void> {
   return authRequest<void>(`/api/manage/rewards/${rewardId}`, { method: "DELETE" });
+}
+
+// ── Manage Invitation Code API (추첨 코드) ─────────────────────────────────
+
+export async function getManageInvitationCodesByContent(contentCode: string): Promise<ManageInvitationCodeResponse[]> {
+  return authRequest<ManageInvitationCodeResponse[]>(
+    `/api/manage/invitation-codes?contentCode=${encodeURIComponent(contentCode)}`
+  );
+}
+
+export async function getManageInvitationCode(invitationCodeId: number): Promise<ManageInvitationCodeResponse> {
+  return authRequest<ManageInvitationCodeResponse>(`/api/manage/invitation-codes/${invitationCodeId}`);
+}
+
+export async function createManageInvitationCode(payload: InvitationCodeCreateRequest): Promise<ManageInvitationCodeResponse> {
+  return authRequest<ManageInvitationCodeResponse>("/api/manage/invitation-codes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateManageInvitationCode(
+  invitationCodeId: number,
+  payload: InvitationCodeUpdateRequest
+): Promise<ManageInvitationCodeResponse> {
+  return authRequest<ManageInvitationCodeResponse>(`/api/manage/invitation-codes/${invitationCodeId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteManageInvitationCode(invitationCodeId: number): Promise<void> {
+  return authRequest<void>(`/api/manage/invitation-codes/${invitationCodeId}`, { method: "DELETE" });
 }

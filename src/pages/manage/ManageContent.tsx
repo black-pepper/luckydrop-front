@@ -4,12 +4,13 @@ import ManageLayout from "@/components/manage/ManageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus } from "lucide-react";
+import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save } from "lucide-react";
 import {
   getManageContentDetail,
   updateManageContent,
@@ -18,11 +19,33 @@ import {
   createManageReward,
   updateManageReward,
   deleteManageReward,
+  getManageInvitationCodesByContent,
+  createManageInvitationCode,
+  updateManageInvitationCode,
+  deleteManageInvitationCode,
 } from "@/api/client";
-import type { ManageContentDetailResponse, ManageRewardResponse } from "@/api/types";
-import { mockInviteCodes, mockResults } from "@/data/manageMockData";
+import type { ManageContentDetailResponse, ManageRewardResponse, ManageInvitationCodeResponse } from "@/api/types";
+import { mockResults } from "@/data/manageMockData";
 
-// ── Local form type ─────────────────────────────────────────────────────────
+// ── Local form types ────────────────────────────────────────────────────────
+
+interface InvitationCodeFormState {
+  code: string;
+  name: string;
+  allowedDrawCount: number;
+  active: boolean;
+}
+
+const emptyCodeForm = (): InvitationCodeFormState => ({
+  code: "", name: "", allowedDrawCount: 1, active: true,
+});
+
+const fromApiCode = (c: ManageInvitationCodeResponse): InvitationCodeFormState => ({
+  code: c.code,
+  name: c.name ?? "",
+  allowedDrawCount: c.allowedDrawCount,
+  active: c.active,
+});
 
 interface RewardFormState {
   name: string;
@@ -138,6 +161,60 @@ const RewardFormCard: React.FC<{
   </Card>
 );
 
+// ── InvitationCodeFormCard ──────────────────────────────────────────────────
+
+const InvitationCodeFormCard: React.FC<{
+  title: string;
+  form: InvitationCodeFormState;
+  onChange: (f: InvitationCodeFormState) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  saving?: boolean;
+  error?: string | null;
+  isEdit?: boolean;
+}> = ({ title, form, onChange, onSave, onCancel, saving, error, isEdit }) => (
+  <Card className="border border-primary/30 bg-muted/20">
+    <CardContent className="p-4 space-y-3">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      {!isEdit && (
+        <div className="space-y-1.5">
+          <Label className="text-sm">코드</Label>
+          <Input className="font-mono" placeholder="예: LUCKY-001" value={form.code} onChange={(e) => onChange({ ...form, code: e.target.value })} />
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-sm">참여자 이름</Label>
+          <Input placeholder="참여자 이름 (선택)" value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm">허용 횟수</Label>
+          <Input type="number" placeholder="1" value={form.allowedDrawCount} onChange={(e) => onChange({ ...form, allowedDrawCount: Number(e.target.value) })} />
+        </div>
+      </div>
+      {isEdit && (
+        <div className="flex items-center gap-2">
+          <Switch
+            id="code-active"
+            checked={form.active}
+            onCheckedChange={(checked) => onChange({ ...form, active: !!checked })}
+          />
+          <Label htmlFor="code-active" className="text-sm cursor-pointer">활성화</Label>
+        </div>
+      )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" className="gap-1" onClick={onSave} disabled={saving}>
+          <Check className="h-3.5 w-3.5" /> {saving ? "저장 중..." : "저장"}
+        </Button>
+        <Button size="sm" variant="outline" className="gap-1" onClick={onCancel} disabled={saving}>
+          <X className="h-3.5 w-3.5" /> 취소
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 // ── ManageContent ───────────────────────────────────────────────────────────
 
 const typeLabel: Record<string, string> = {
@@ -157,12 +234,11 @@ const ManageContent: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   // Edit content state
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editType, setEditType] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // Rewards state
@@ -182,6 +258,23 @@ const ManageContent: React.FC = () => {
   const [editingReward, setEditingReward] = useState(false);
   const [editRewardError, setEditRewardError] = useState<string | null>(null);
 
+  // Invitation codes state
+  const [inviteCodes, setInviteCodes] = useState<ManageInvitationCodeResponse[]>([]);
+  const [inviteCodesLoading, setInviteCodesLoading] = useState(false);
+  const [inviteCodesError, setInviteCodesError] = useState<string | null>(null);
+
+  // Add invitation code form
+  const [showAddCodeForm, setShowAddCodeForm] = useState(false);
+  const [addCodeForm, setAddCodeForm] = useState<InvitationCodeFormState>(emptyCodeForm());
+  const [addingCode, setAddingCode] = useState(false);
+  const [addCodeError, setAddCodeError] = useState<string | null>(null);
+
+  // Edit invitation code form
+  const [editingCodeId, setEditingCodeId] = useState<number | null>(null);
+  const [editCodeForm, setEditCodeForm] = useState<InvitationCodeFormState>(emptyCodeForm());
+  const [editingCode, setEditingCode] = useState(false);
+  const [editCodeError, setEditCodeError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!contentCode) return;
     setLoading(true);
@@ -191,7 +284,6 @@ const ManageContent: React.FC = () => {
         setContent(data);
         setEditTitle(data.title);
         setEditDescription(data.description);
-        setEditType(data.type);
       })
       .catch((e) => setError(e.message ?? "콘텐츠를 불러오지 못했습니다"))
       .finally(() => setLoading(false));
@@ -207,6 +299,16 @@ const ManageContent: React.FC = () => {
       .finally(() => setRewardsLoading(false));
   }, [contentCode]);
 
+  useEffect(() => {
+    if (!contentCode) return;
+    setInviteCodesLoading(true);
+    setInviteCodesError(null);
+    getManageInvitationCodesByContent(contentCode)
+      .then(setInviteCodes)
+      .catch((e) => setInviteCodesError(e.message ?? "추첨 코드 목록을 불러오지 못했습니다"))
+      .finally(() => setInviteCodesLoading(false));
+  }, [contentCode]);
+
   const shareLink = `${window.location.origin}/draw?contentCode=${contentCode}`;
 
   const handleCopy = () => {
@@ -216,24 +318,31 @@ const ManageContent: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!contentCode) return;
+    if (!contentCode || !content) return;
     setSaving(true);
     setSaveError(null);
-    setSaveSuccess(false);
     try {
       const updated = await updateManageContent(contentCode, {
-        type: editType,
+        type: content.type,
         title: editTitle,
         description: editDescription,
       });
-      setContent({ ...updated, createdAt: content?.createdAt ?? updated.createdAt });
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
+      setContent({ ...updated, createdAt: content.createdAt });
+      setIsEditingInfo(false);
     } catch (e: any) {
       setSaveError(e.message ?? "저장에 실패했습니다");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancelEditInfo = () => {
+    if (content) {
+      setEditTitle(content.title);
+      setEditDescription(content.description);
+    }
+    setIsEditingInfo(false);
+    setSaveError(null);
   };
 
   const handleDelete = async () => {
@@ -305,6 +414,56 @@ const ManageContent: React.FC = () => {
     }
   };
 
+  const handleAddCode = async () => {
+    if (!contentCode) return;
+    setAddingCode(true);
+    setAddCodeError(null);
+    try {
+      const created = await createManageInvitationCode({
+        contentCode,
+        code: addCodeForm.code,
+        name: addCodeForm.name || undefined,
+        allowedDrawCount: addCodeForm.allowedDrawCount,
+      });
+      setInviteCodes((prev) => [...prev, created]);
+      setShowAddCodeForm(false);
+      setAddCodeForm(emptyCodeForm());
+    } catch (e: any) {
+      setAddCodeError(e.message ?? "추첨 코드 추가에 실패했습니다");
+    } finally {
+      setAddingCode(false);
+    }
+  };
+
+  const handleUpdateCode = async () => {
+    if (editingCodeId == null) return;
+    setEditingCode(true);
+    setEditCodeError(null);
+    try {
+      const updated = await updateManageInvitationCode(editingCodeId, {
+        name: editCodeForm.name || undefined,
+        allowedDrawCount: editCodeForm.allowedDrawCount,
+        active: editCodeForm.active,
+      });
+      setInviteCodes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      setEditingCodeId(null);
+    } catch (e: any) {
+      setEditCodeError(e.message ?? "수정에 실패했습니다");
+    } finally {
+      setEditingCode(false);
+    }
+  };
+
+  const handleDeleteCode = async (invitationCodeId: number) => {
+    if (!window.confirm("추첨 코드를 삭제하시겠습니까?")) return;
+    try {
+      await deleteManageInvitationCode(invitationCodeId);
+      setInviteCodes((prev) => prev.filter((c) => c.id !== invitationCodeId));
+    } catch (e: any) {
+      alert(e.message ?? "삭제에 실패했습니다");
+    }
+  };
+
   if (loading) {
     return <ManageLayout><p className="text-center text-muted-foreground py-20">불러오는 중...</p></ManageLayout>;
   }
@@ -352,34 +511,67 @@ const ManageContent: React.FC = () => {
         <TabsContent value="info">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base">기본 정보 수정</CardTitle>
-              <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting}>
-                {deleting ? "삭제 중..." : "삭제"}
-              </Button>
+              <CardTitle className="text-base">기본정보</CardTitle>
+              {!isEditingInfo && (
+                <Button size="sm" variant="outline" className="gap-1" onClick={() => setIsEditingInfo(true)}>
+                  <Pencil className="h-3.5 w-3.5" /> 수정
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label>타입</Label>
-                <Input value={editType} onChange={(e) => setEditType(e.target.value)} />
+                <Label className="text-sm">콘텐츠 이름</Label>
+                {isEditingInfo ? (
+                  <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="콘텐츠 이름" />
+                ) : (
+                  <p className="text-sm text-foreground bg-muted/30 rounded-md px-3 py-2">{content.title}</p>
+                )}
               </div>
               <div className="space-y-1.5">
-                <Label>제목</Label>
-                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                <Label className="text-sm">설명</Label>
+                {isEditingInfo ? (
+                  <Textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="콘텐츠 설명"
+                    className="min-h-[80px]"
+                  />
+                ) : (
+                  <p className="text-sm text-foreground bg-muted/30 rounded-md px-3 py-2">{content.description}</p>
+                )}
               </div>
               <div className="space-y-1.5">
-                <Label>설명</Label>
-                <Input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+                <Label className="text-sm">콘텐츠 타입</Label>
+                <p className="text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+                  {typeLabel[content.type] ?? content.type}
+                  <span className="text-[11px] ml-2">(변경 불가)</span>
+                </p>
               </div>
-              <div className="flex items-center gap-3">
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
+              <div className="space-y-1.5">
+                <Label className="text-sm">콘텐츠 코드</Label>
+                <p className="text-sm font-mono text-muted-foreground bg-muted/30 rounded-md px-3 py-2">{content.code}</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">생성일</Label>
+                <p className="text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+                  {new Date(content.createdAt).toLocaleString("ko-KR")}
+                </p>
+              </div>
+              {isEditingInfo && (
+                <div className="flex gap-2 pt-2">
+                  <Button size="sm" className="gap-1" onClick={handleSave} disabled={saving}>
+                    <Save className="h-3.5 w-3.5" /> {saving ? "저장 중..." : "저장"}
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1" onClick={handleCancelEditInfo} disabled={saving}>
+                    <X className="h-3.5 w-3.5" /> 취소
+                  </Button>
+                </div>
+              )}
+              {saveError && <p className="text-sm text-destructive">{saveError}</p>}
+              <div className="pt-2 border-t border-border">
+                <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? "삭제 중..." : "콘텐츠 삭제"}
                 </Button>
-                {saveSuccess && <span className="text-sm text-green-600">저장되었습니다</span>}
-                {saveError && <span className="text-sm text-destructive">{saveError}</span>}
-              </div>
-              <div className="pt-2 text-xs text-muted-foreground space-y-1">
-                <p>콘텐츠 코드: <span className="font-mono">{content.code}</span></p>
-                <p>생성일: {new Date(content.createdAt).toLocaleString("ko-KR")}</p>
               </div>
             </CardContent>
           </Card>
@@ -466,34 +658,100 @@ const ManageContent: React.FC = () => {
           </Card>
         </TabsContent>
 
-        {/* ── Codes (mock) ── */}
+        {/* ── Codes ── */}
         <TabsContent value="codes">
           <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-muted-foreground">
-                      <th className="px-5 py-2">코드</th>
-                      <th className="px-5 py-2">닉네임</th>
-                      <th className="px-5 py-2">메모</th>
-                      <th className="px-5 py-2 text-center">남은 횟수</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockInviteCodes.map((c) => (
-                      <tr key={c.id} className="border-b last:border-0">
-                        <td className="px-5 py-2.5 font-mono text-xs text-foreground">{c.code}</td>
-                        <td className="px-5 py-2.5 text-foreground">{c.nickname || "—"}</td>
-                        <td className="px-5 py-2.5 text-muted-foreground">{c.memo || "—"}</td>
-                        <td className="px-5 py-2.5 text-center">
-                          <Badge variant={c.remaining > 0 ? "default" : "secondary"}>{c.remaining}</Badge>
-                        </td>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base">추첨 코드 목록</CardTitle>
+              {!showAddCodeForm && (
+                <Button size="sm" variant="outline" className="gap-1" onClick={() => { setShowAddCodeForm(true); setAddCodeForm(emptyCodeForm()); setAddCodeError(null); }}>
+                  <Plus className="h-3.5 w-3.5" /> 추가
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3 pt-2">
+              {showAddCodeForm && (
+                <InvitationCodeFormCard
+                  title="새 추첨 코드 추가"
+                  form={addCodeForm}
+                  onChange={setAddCodeForm}
+                  onSave={handleAddCode}
+                  onCancel={() => { setShowAddCodeForm(false); setAddCodeError(null); }}
+                  saving={addingCode}
+                  error={addCodeError}
+                />
+              )}
+              {inviteCodesLoading && (
+                <p className="text-center text-muted-foreground py-6 text-sm">불러오는 중...</p>
+              )}
+              {!inviteCodesLoading && inviteCodesError && (
+                <p className="text-center text-destructive py-6 text-sm">{inviteCodesError}</p>
+              )}
+              {!inviteCodesLoading && !inviteCodesError && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-muted-foreground">
+                        <th className="px-5 py-2">코드</th>
+                        <th className="px-5 py-2">이름</th>
+                        <th className="px-5 py-2 text-center">허용/사용</th>
+                        <th className="px-5 py-2 text-center">남은 횟수</th>
+                        <th className="px-5 py-2 text-center">활성</th>
+                        <th className="px-5 py-2" />
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {inviteCodes.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-5 py-6 text-center text-muted-foreground">등록된 추첨 코드가 없습니다</td>
+                        </tr>
+                      )}
+                      {inviteCodes.map((c) =>
+                        editingCodeId === c.id ? (
+                          <tr key={c.id}>
+                            <td colSpan={6} className="px-3 py-2">
+                              <InvitationCodeFormCard
+                                title="추첨 코드 수정"
+                                form={editCodeForm}
+                                onChange={setEditCodeForm}
+                                onSave={handleUpdateCode}
+                                onCancel={() => { setEditingCodeId(null); setEditCodeError(null); }}
+                                saving={editingCode}
+                                error={editCodeError}
+                                isEdit
+                              />
+                            </td>
+                          </tr>
+                        ) : (
+                          <tr key={c.id} className="border-b last:border-0">
+                            <td className="px-5 py-2.5 font-mono text-xs text-foreground">{c.code}</td>
+                            <td className="px-5 py-2.5 text-foreground">{c.name || "—"}</td>
+                            <td className="px-5 py-2.5 text-center text-muted-foreground">
+                              {c.allowedDrawCount} / {c.usedDrawCount}
+                            </td>
+                            <td className="px-5 py-2.5 text-center">
+                              <Badge variant={c.remainingCount > 0 ? "default" : "secondary"}>{c.remainingCount}</Badge>
+                            </td>
+                            <td className="px-5 py-2.5 text-center">
+                              <Badge variant={c.active ? "default" : "secondary"}>{c.active ? "활성" : "비활성"}</Badge>
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex gap-1 justify-end">
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingCodeId(c.id); setEditCodeForm(fromApiCode(c)); setEditCodeError(null); }}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDeleteCode(c.id)}>
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
