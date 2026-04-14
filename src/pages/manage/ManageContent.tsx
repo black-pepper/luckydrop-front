@@ -4,12 +4,13 @@ import ManageLayout from "@/components/manage/ManageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus } from "lucide-react";
+import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save } from "lucide-react";
 import {
   getManageContentDetail,
   updateManageContent,
@@ -233,12 +234,11 @@ const ManageContent: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   // Edit content state
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editType, setEditType] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // Rewards state
@@ -284,7 +284,6 @@ const ManageContent: React.FC = () => {
         setContent(data);
         setEditTitle(data.title);
         setEditDescription(data.description);
-        setEditType(data.type);
       })
       .catch((e) => setError(e.message ?? "콘텐츠를 불러오지 못했습니다"))
       .finally(() => setLoading(false));
@@ -319,24 +318,31 @@ const ManageContent: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!contentCode) return;
+    if (!contentCode || !content) return;
     setSaving(true);
     setSaveError(null);
-    setSaveSuccess(false);
     try {
       const updated = await updateManageContent(contentCode, {
-        type: editType,
+        type: content.type,
         title: editTitle,
         description: editDescription,
       });
-      setContent({ ...updated, createdAt: content?.createdAt ?? updated.createdAt });
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
+      setContent({ ...updated, createdAt: content.createdAt });
+      setIsEditingInfo(false);
     } catch (e: any) {
       setSaveError(e.message ?? "저장에 실패했습니다");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancelEditInfo = () => {
+    if (content) {
+      setEditTitle(content.title);
+      setEditDescription(content.description);
+    }
+    setIsEditingInfo(false);
+    setSaveError(null);
   };
 
   const handleDelete = async () => {
@@ -505,34 +511,67 @@ const ManageContent: React.FC = () => {
         <TabsContent value="info">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base">기본 정보 수정</CardTitle>
-              <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting}>
-                {deleting ? "삭제 중..." : "삭제"}
-              </Button>
+              <CardTitle className="text-base">기본정보</CardTitle>
+              {!isEditingInfo && (
+                <Button size="sm" variant="outline" className="gap-1" onClick={() => setIsEditingInfo(true)}>
+                  <Pencil className="h-3.5 w-3.5" /> 수정
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label>타입</Label>
-                <Input value={editType} onChange={(e) => setEditType(e.target.value)} />
+                <Label className="text-sm">콘텐츠 이름</Label>
+                {isEditingInfo ? (
+                  <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="콘텐츠 이름" />
+                ) : (
+                  <p className="text-sm text-foreground bg-muted/30 rounded-md px-3 py-2">{content.title}</p>
+                )}
               </div>
               <div className="space-y-1.5">
-                <Label>제목</Label>
-                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                <Label className="text-sm">설명</Label>
+                {isEditingInfo ? (
+                  <Textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="콘텐츠 설명"
+                    className="min-h-[80px]"
+                  />
+                ) : (
+                  <p className="text-sm text-foreground bg-muted/30 rounded-md px-3 py-2">{content.description}</p>
+                )}
               </div>
               <div className="space-y-1.5">
-                <Label>설명</Label>
-                <Input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+                <Label className="text-sm">콘텐츠 타입</Label>
+                <p className="text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+                  {typeLabel[content.type] ?? content.type}
+                  <span className="text-[11px] ml-2">(변경 불가)</span>
+                </p>
               </div>
-              <div className="flex items-center gap-3">
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? "저장 중..." : "저장"}
+              <div className="space-y-1.5">
+                <Label className="text-sm">콘텐츠 코드</Label>
+                <p className="text-sm font-mono text-muted-foreground bg-muted/30 rounded-md px-3 py-2">{content.code}</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">생성일</Label>
+                <p className="text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+                  {new Date(content.createdAt).toLocaleString("ko-KR")}
+                </p>
+              </div>
+              {isEditingInfo && (
+                <div className="flex gap-2 pt-2">
+                  <Button size="sm" className="gap-1" onClick={handleSave} disabled={saving}>
+                    <Save className="h-3.5 w-3.5" /> {saving ? "저장 중..." : "저장"}
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1" onClick={handleCancelEditInfo} disabled={saving}>
+                    <X className="h-3.5 w-3.5" /> 취소
+                  </Button>
+                </div>
+              )}
+              {saveError && <p className="text-sm text-destructive">{saveError}</p>}
+              <div className="pt-2 border-t border-border">
+                <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? "삭제 중..." : "콘텐츠 삭제"}
                 </Button>
-                {saveSuccess && <span className="text-sm text-green-600">저장되었습니다</span>}
-                {saveError && <span className="text-sm text-destructive">{saveError}</span>}
-              </div>
-              <div className="pt-2 text-xs text-muted-foreground space-y-1">
-                <p>콘텐츠 코드: <span className="font-mono">{content.code}</span></p>
-                <p>생성일: {new Date(content.createdAt).toLocaleString("ko-KR")}</p>
               </div>
             </CardContent>
           </Card>

@@ -71,7 +71,8 @@ const CreateContent: React.FC = () => {
 
   const canNext = () => {
     if (step === 1) return !!contentType;
-    if (step === 2) return title.trim().length > 0;
+    if (step === 2) return title.trim().length > 0 && description.trim().length > 0;
+    if (step === 4) return codes.every((c) => c.code.trim().length > 0 && c.name.trim().length > 0);
     return true;
   };
 
@@ -160,8 +161,8 @@ const CreateContent: React.FC = () => {
               <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="이벤트 제목을 입력하세요" />
             </div>
             <div className="space-y-1.5">
-              <Label>설명</Label>
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="간단한 설명" />
+              <Label>설명 <span className="text-destructive">*</span></Label>
+              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="간단한 설명을 입력하세요" />
             </div>
             <div className="flex items-center justify-between">
               <Label>공개 여부</Label>
@@ -311,10 +312,10 @@ const CreateContent: React.FC = () => {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs">참여자 이름</Label>
+                        <Label className="text-xs">참여자 이름 <span className="text-destructive">*</span></Label>
                         <Input
                           className="text-sm"
-                          placeholder="참여자 이름 (선택)"
+                          placeholder="참여자 이름"
                           value={c.name}
                           onChange={(e) => updateCode(c.id, "name", e.target.value)}
                         />
