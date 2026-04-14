@@ -7,9 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Trash2, Plus, Shuffle, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
-import { createManageContent, createManageReward } from "@/api/client";
+import { createManageContent, createManageReward, createManageInvitationCode } from "@/api/client";
 import type { ContentType } from "@/data/manageMockData";
 
 const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string }[] = [
@@ -27,7 +26,7 @@ interface RewardRow {
   unlimited: boolean;
   allowDuplicateReward: boolean;
 }
-interface CodeRow { id: number; code: string; nickname: string; memo: string; remaining: number }
+interface CodeRow { id: number; code: string; name: string; allowedDrawCount: number }
 
 const initialRewards: RewardRow[] = [
   { id: 1, name: "스타벅스 쿠폰", weight: 10, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: false },
@@ -35,9 +34,7 @@ const initialRewards: RewardRow[] = [
   { id: 3, name: "꽝", weight: 60, stock: 999, imageUrl: "", unlimited: true, allowDuplicateReward: false },
 ];
 
-const initialCodes: CodeRow[] = [
-  { id: 1, code: "ABC123", nickname: "김철수", memo: "VIP", remaining: 3 },
-];
+const initialCodes: CodeRow[] = [];
 
 const CreateContent: React.FC = () => {
   const navigate = useNavigate();
@@ -58,14 +55,16 @@ const CreateContent: React.FC = () => {
   const updateReward = (id: number, field: keyof RewardRow, value: string | number | boolean) =>
     setRewards((r) => r.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
 
-  const addCode = () => setCodes((c) => [...c, { id: Date.now(), code: "", nickname: "", memo: "", remaining: 3 }]);
+  const addCode = () => setCodes((c) => [...c, { id: Date.now(), code: "", name: "", allowedDrawCount: 1 }]);
+  const removeCode = (id: number) => setCodes((c) => c.filter((x) => x.id !== id));
+  const updateCode = (id: number, field: keyof CodeRow, value: string | number) =>
+    setCodes((c) => c.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
   const autoGenCodes = () => {
     const generated = Array.from({ length: 3 }, (_, i) => ({
       id: Date.now() + i,
       code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-      nickname: "",
-      memo: "자동생성",
-      remaining: 3,
+      name: "",
+      allowedDrawCount: 1,
     }));
     setCodes((c) => [...c, ...generated]);
   };
@@ -97,6 +96,18 @@ const CreateContent: React.FC = () => {
             allowDuplicateReward: r.allowDuplicateReward,
           })
         )
+      );
+      await Promise.all(
+        codes
+          .filter((c) => c.code.trim().length > 0)
+          .map((c) =>
+            createManageInvitationCode({
+              contentCode: created.code,
+              code: c.code.trim(),
+              name: c.name || undefined,
+              allowedDrawCount: c.allowedDrawCount,
+            })
+          )
       );
       navigate("/manage");
     } catch (e: any) {
@@ -269,29 +280,62 @@ const CreateContent: React.FC = () => {
       {step === 4 && (
         <Card>
           <CardHeader><CardTitle className="text-lg">초대 코드</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-2 pr-2">코드</th>
-                    <th className="pb-2 pr-2">닉네임</th>
-                    <th className="pb-2 pr-2">메모</th>
-                    <th className="pb-2 pr-2 text-center">남은 횟수</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {codes.map((c) => (
-                    <tr key={c.id} className="border-b last:border-0">
-                      <td className="py-2 pr-2 font-mono text-xs">{c.code || "—"}</td>
-                      <td className="py-2 pr-2">{c.nickname || "—"}</td>
-                      <td className="py-2 pr-2 text-muted-foreground">{c.memo || "—"}</td>
-                      <td className="py-2 pr-2 text-center">{c.remaining}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">참여자는 이 코드를 입력해 콘텐츠에 참여합니다.</p>
+
+            {codes.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p className="text-sm">코드를 추가해주세요</p>
+                <p className="text-xs mt-1">아래 버튼으로 직접 추가하거나 자동 생성할 수 있습니다.</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {codes.map((c, idx) => (
+                <Card key={c.id} className="border border-border bg-muted/30">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-foreground">코드 #{idx + 1}</span>
+                      <Button size="icon" variant="ghost" onClick={() => removeCode(c.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">코드</Label>
+                        <Input
+                          className="font-mono text-sm"
+                          placeholder="예: ABC123"
+                          value={c.code}
+                          onChange={(e) => updateCode(c.id, "code", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">참여자 이름</Label>
+                        <Input
+                          className="text-sm"
+                          placeholder="참여자 이름 (선택)"
+                          value={c.name}
+                          onChange={(e) => updateCode(c.id, "name", e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">허용 횟수</Label>
+                        <Input
+                          type="number"
+                          className="text-sm"
+                          value={c.allowedDrawCount}
+                          onChange={(e) => updateCode(c.id, "allowedDrawCount", Number(e.target.value))}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
+
+            <p className="text-[11px] text-muted-foreground">코드는 영문, 숫자 조합을 권장합니다. 중복 코드는 사용할 수 없습니다.</p>
+
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" className="gap-1.5" onClick={addCode}>
                 <Plus className="h-4 w-4" /> 코드 추가
@@ -300,6 +344,7 @@ const CreateContent: React.FC = () => {
                 <Shuffle className="h-4 w-4" /> 코드 자동 생성
               </Button>
             </div>
+
             {submitError && <p className="text-sm text-destructive">{submitError}</p>}
           </CardContent>
         </Card>

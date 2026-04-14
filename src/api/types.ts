@@ -144,10 +144,13 @@ export interface ManageInvitationCodeResponse {
   id: number;
   contentCode: string;
   code: string;
-  nickname?: string;
-  memo?: string;
-  maxDrawCount: number;
+  name?: string;
+  allowedDrawCount: number;
+  usedDrawCount: number;
   remainingCount: number;
+  active: boolean;
+  expiresAt?: string; // ISO date-time
+  lastUsedAt?: string; // ISO date-time
   createdAt: string; // ISO date-time
   updatedAt: string; // ISO date-time
 }
@@ -156,15 +159,15 @@ export interface ManageInvitationCodeResponse {
 export interface InvitationCodeCreateRequest {
   contentCode: string;
   code: string;
-  nickname?: string;
-  memo?: string;
-  maxDrawCount: number;
+  name?: string;
+  allowedDrawCount: number;
+  expiresAt?: string; // ISO date-time
 }
 
 // PUT /api/manage/invitation-codes/{invitationCodeId}
 export interface InvitationCodeUpdateRequest {
-  code?: string;
-  nickname?: string;
-  memo?: string;
-  maxDrawCount?: number;
+  name?: string;
+  allowedDrawCount: number;
+  expiresAt?: string; // ISO date-time
+  active: boolean;
 }

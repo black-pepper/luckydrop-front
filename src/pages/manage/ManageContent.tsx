@@ -30,20 +30,20 @@ import { mockResults } from "@/data/manageMockData";
 
 interface InvitationCodeFormState {
   code: string;
-  nickname: string;
-  memo: string;
-  maxDrawCount: number;
+  name: string;
+  allowedDrawCount: number;
+  active: boolean;
 }
 
 const emptyCodeForm = (): InvitationCodeFormState => ({
-  code: "", nickname: "", memo: "", maxDrawCount: 1,
+  code: "", name: "", allowedDrawCount: 1, active: true,
 });
 
 const fromApiCode = (c: ManageInvitationCodeResponse): InvitationCodeFormState => ({
   code: c.code,
-  nickname: c.nickname ?? "",
-  memo: c.memo ?? "",
-  maxDrawCount: c.maxDrawCount,
+  name: c.name ?? "",
+  allowedDrawCount: c.allowedDrawCount,
+  active: c.active,
 });
 
 interface RewardFormState {
@@ -170,28 +170,37 @@ const InvitationCodeFormCard: React.FC<{
   onCancel: () => void;
   saving?: boolean;
   error?: string | null;
-}> = ({ title, form, onChange, onSave, onCancel, saving, error }) => (
+  isEdit?: boolean;
+}> = ({ title, form, onChange, onSave, onCancel, saving, error, isEdit }) => (
   <Card className="border border-primary/30 bg-muted/20">
     <CardContent className="p-4 space-y-3">
       <p className="text-sm font-semibold text-foreground">{title}</p>
-      <div className="space-y-1.5">
-        <Label className="text-sm">코드</Label>
-        <Input placeholder="예: LUCKY-001" value={form.code} onChange={(e) => onChange({ ...form, code: e.target.value })} />
-      </div>
+      {!isEdit && (
+        <div className="space-y-1.5">
+          <Label className="text-sm">코드</Label>
+          <Input className="font-mono" placeholder="예: LUCKY-001" value={form.code} onChange={(e) => onChange({ ...form, code: e.target.value })} />
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-sm">닉네임</Label>
-          <Input placeholder="참여자 닉네임" value={form.nickname} onChange={(e) => onChange({ ...form, nickname: e.target.value })} />
+          <Label className="text-sm">참여자 이름</Label>
+          <Input placeholder="참여자 이름 (선택)" value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-sm">최대 뽑기 횟수</Label>
-          <Input type="number" placeholder="1" value={form.maxDrawCount} onChange={(e) => onChange({ ...form, maxDrawCount: Number(e.target.value) })} />
+          <Label className="text-sm">허용 횟수</Label>
+          <Input type="number" placeholder="1" value={form.allowedDrawCount} onChange={(e) => onChange({ ...form, allowedDrawCount: Number(e.target.value) })} />
         </div>
       </div>
-      <div className="space-y-1.5">
-        <Label className="text-sm">메모</Label>
-        <Input placeholder="메모 (선택)" value={form.memo} onChange={(e) => onChange({ ...form, memo: e.target.value })} />
-      </div>
+      {isEdit && (
+        <div className="flex items-center gap-2">
+          <Switch
+            id="code-active"
+            checked={form.active}
+            onCheckedChange={(checked) => onChange({ ...form, active: !!checked })}
+          />
+          <Label htmlFor="code-active" className="text-sm cursor-pointer">활성화</Label>
+        </div>
+      )}
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-2 pt-1">
         <Button size="sm" className="gap-1" onClick={onSave} disabled={saving}>
@@ -407,9 +416,8 @@ const ManageContent: React.FC = () => {
       const created = await createManageInvitationCode({
         contentCode,
         code: addCodeForm.code,
-        nickname: addCodeForm.nickname || undefined,
-        memo: addCodeForm.memo || undefined,
-        maxDrawCount: addCodeForm.maxDrawCount,
+        name: addCodeForm.name || undefined,
+        allowedDrawCount: addCodeForm.allowedDrawCount,
       });
       setInviteCodes((prev) => [...prev, created]);
       setShowAddCodeForm(false);
@@ -427,10 +435,9 @@ const ManageContent: React.FC = () => {
     setEditCodeError(null);
     try {
       const updated = await updateManageInvitationCode(editingCodeId, {
-        code: editCodeForm.code || undefined,
-        nickname: editCodeForm.nickname || undefined,
-        memo: editCodeForm.memo || undefined,
-        maxDrawCount: editCodeForm.maxDrawCount,
+        name: editCodeForm.name || undefined,
+        allowedDrawCount: editCodeForm.allowedDrawCount,
+        active: editCodeForm.active,
       });
       setInviteCodes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
       setEditingCodeId(null);
@@ -647,22 +654,23 @@ const ManageContent: React.FC = () => {
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
                         <th className="px-5 py-2">코드</th>
-                        <th className="px-5 py-2">닉네임</th>
-                        <th className="px-5 py-2">메모</th>
+                        <th className="px-5 py-2">이름</th>
+                        <th className="px-5 py-2 text-center">허용/사용</th>
                         <th className="px-5 py-2 text-center">남은 횟수</th>
+                        <th className="px-5 py-2 text-center">활성</th>
                         <th className="px-5 py-2" />
                       </tr>
                     </thead>
                     <tbody>
                       {inviteCodes.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-5 py-6 text-center text-muted-foreground">등록된 추첨 코드가 없습니다</td>
+                          <td colSpan={6} className="px-5 py-6 text-center text-muted-foreground">등록된 추첨 코드가 없습니다</td>
                         </tr>
                       )}
                       {inviteCodes.map((c) =>
                         editingCodeId === c.id ? (
                           <tr key={c.id}>
-                            <td colSpan={5} className="px-3 py-2">
+                            <td colSpan={6} className="px-3 py-2">
                               <InvitationCodeFormCard
                                 title="추첨 코드 수정"
                                 form={editCodeForm}
@@ -671,16 +679,22 @@ const ManageContent: React.FC = () => {
                                 onCancel={() => { setEditingCodeId(null); setEditCodeError(null); }}
                                 saving={editingCode}
                                 error={editCodeError}
+                                isEdit
                               />
                             </td>
                           </tr>
                         ) : (
                           <tr key={c.id} className="border-b last:border-0">
                             <td className="px-5 py-2.5 font-mono text-xs text-foreground">{c.code}</td>
-                            <td className="px-5 py-2.5 text-foreground">{c.nickname || "—"}</td>
-                            <td className="px-5 py-2.5 text-muted-foreground">{c.memo || "—"}</td>
+                            <td className="px-5 py-2.5 text-foreground">{c.name || "—"}</td>
+                            <td className="px-5 py-2.5 text-center text-muted-foreground">
+                              {c.allowedDrawCount} / {c.usedDrawCount}
+                            </td>
                             <td className="px-5 py-2.5 text-center">
                               <Badge variant={c.remainingCount > 0 ? "default" : "secondary"}>{c.remainingCount}</Badge>
+                            </td>
+                            <td className="px-5 py-2.5 text-center">
+                              <Badge variant={c.active ? "default" : "secondary"}>{c.active ? "활성" : "비활성"}</Badge>
                             </td>
                             <td className="px-3 py-2">
                               <div className="flex gap-1 justify-end">
