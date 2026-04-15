@@ -71,7 +71,7 @@ const HeroSection = () => {
         룰렛, 익명 메시지함 등 다양한 이벤트를 손쉽게 만들고 공유할 수 있어요.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <Button size="lg" className="w-full sm:w-auto gap-2" onClick={() => navigate("/draw")}>
+        <Button size="lg" className="w-full sm:w-auto gap-2" onClick={() => navigate("/draw")} style={{ display: "none" }}>
           <KeyRound size={18} /> 코드로 참여하기
         </Button>
         <Button size="lg" variant="secondary" className="w-full sm:w-auto gap-2" onClick={() => navigate("/manage/login")}>

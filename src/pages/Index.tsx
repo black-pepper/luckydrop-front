@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import CodeInputCard from "@/components/draw/CodeInputCard";
 import UserInfoCard from "@/components/draw/UserInfoCard";
 import DrawBox from "@/components/draw/DrawBox";
@@ -12,7 +12,7 @@ type AppState = "code" | "user" | "drawing" | "result" | "history";
 type HistoryReturnState = "user" | "result";
 
 const Index = () => {
-  const [searchParams] = useSearchParams();
+  const { contentCode = "" } = useParams<{ contentCode: string }>();
   const [state, setState] = useState<AppState>("code");
   const [invitationCode, setInvitationCode] = useState("");
   const [maskedName, setMaskedName] = useState("");
@@ -28,8 +28,6 @@ const Index = () => {
   const [history, setHistory] = useState<DrawResultResponse[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyReturnState, setHistoryReturnState] = useState<HistoryReturnState>("user");
-
-  const contentCode = searchParams.get("contentCode") ?? searchParams.get("event") ?? "";
 
   const getDrawParams = useCallback(
     (nextInvitationCode?: string): DrawParticipantParams => ({

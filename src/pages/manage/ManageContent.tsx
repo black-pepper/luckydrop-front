@@ -326,7 +326,7 @@ const ManageContent: React.FC = () => {
       .finally(() => setDrawResultsLoading(false));
   }, [contentCode]);
 
-  const shareLink = `${window.location.origin}/draw?contentCode=${contentCode}`;
+  const shareLink = `${window.location.origin}/draw/${contentCode}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareLink).catch(() => {});
