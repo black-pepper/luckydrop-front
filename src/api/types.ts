@@ -48,6 +48,7 @@ export interface DrawResultResponse {
   rewardImageUrl?: string;
   drawNo: number;
   drawnAt: string; // ISO date-time
+  delivered: boolean;
 }
 
 // GET /api/draw/contents/{contentCode}
@@ -170,4 +171,20 @@ export interface InvitationCodeUpdateRequest {
   allowedDrawCount: number;
   expiresAt?: string; // ISO date-time
   active: boolean;
+}
+
+// GET /api/manage/draw-results?contentCode={contentCode}
+export interface ManageDrawResultResponse {
+  drawResultId: number;
+  invitationCode: string;
+  invitationCodeName: string;
+  rewardName: string;
+  drawNo: number;
+  drawnAt: string; // ISO date-time
+  delivered: boolean;
+}
+
+// PUT /api/manage/draw-results/{drawResultId}/delivery
+export interface DrawResultDeliveryUpdateRequest {
+  delivered: boolean;
 }

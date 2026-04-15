@@ -56,6 +56,10 @@ const ResultHistoryList = ({ results, loading, onBack, onReset }: ResultHistoryL
                   <span className="text-xs text-muted-foreground">{r.drawNo}회차</span>
                   <span className="text-xs text-muted-foreground/60">·</span>
                   <span className="text-xs text-muted-foreground/60">{formatDateTime(r.drawnAt)}</span>
+                  <span className="text-xs text-muted-foreground/60">·</span>
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${r.delivered ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    {r.delivered ? "지급완료" : "미지급"}
+                  </span>
                 </div>
               </div>
             </div>
