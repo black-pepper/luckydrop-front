@@ -19,6 +19,8 @@ import type {
   ManageInvitationCodeResponse,
   InvitationCodeCreateRequest,
   InvitationCodeUpdateRequest,
+  ManageDrawResultResponse,
+  DrawResultDeliveryUpdateRequest,
 } from "./types";
 import { supabase } from "@/lib/supabase";
 
@@ -232,4 +234,25 @@ export async function updateManageInvitationCode(
 
 export async function deleteManageInvitationCode(invitationCodeId: number): Promise<void> {
   return authRequest<void>(`/api/manage/invitation-codes/${invitationCodeId}`, { method: "DELETE" });
+}
+
+// ── Manage Draw Results API ─────────────────────────────────────────────────
+
+export async function getManageDrawResults(contentCode: string): Promise<ManageDrawResultResponse[]> {
+  return authRequest<ManageDrawResultResponse[]>(
+    `/api/manage/draw-results?contentCode=${encodeURIComponent(contentCode)}`
+  );
+}
+
+export async function updateDeliveryStatus(
+  drawResultId: number,
+  payload: DrawResultDeliveryUpdateRequest
+): Promise<ManageDrawResultResponse> {
+  return authRequest<ManageDrawResultResponse>(
+    `/api/manage/draw-results/${drawResultId}/delivery`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }
+  );
 }

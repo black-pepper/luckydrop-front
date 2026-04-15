@@ -23,9 +23,9 @@ import {
   createManageInvitationCode,
   updateManageInvitationCode,
   deleteManageInvitationCode,
+  getManageDrawResults,
 } from "@/api/client";
-import type { ManageContentDetailResponse, ManageRewardResponse, ManageInvitationCodeResponse } from "@/api/types";
-import { mockResults } from "@/data/manageMockData";
+import type { ManageContentDetailResponse, ManageRewardResponse, ManageInvitationCodeResponse, ManageDrawResultResponse } from "@/api/types";
 
 // ── Local form types ────────────────────────────────────────────────────────
 
@@ -275,6 +275,11 @@ const ManageContent: React.FC = () => {
   const [editingCode, setEditingCode] = useState(false);
   const [editCodeError, setEditCodeError] = useState<string | null>(null);
 
+  // Draw results state
+  const [drawResults, setDrawResults] = useState<ManageDrawResultResponse[]>([]);
+  const [drawResultsLoading, setDrawResultsLoading] = useState(false);
+  const [drawResultsError, setDrawResultsError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!contentCode) return;
     setLoading(true);
@@ -307,6 +312,16 @@ const ManageContent: React.FC = () => {
       .then(setInviteCodes)
       .catch((e) => setInviteCodesError(e.message ?? "추첨 코드 목록을 불러오지 못했습니다"))
       .finally(() => setInviteCodesLoading(false));
+  }, [contentCode]);
+
+  useEffect(() => {
+    if (!contentCode) return;
+    setDrawResultsLoading(true);
+    setDrawResultsError(null);
+    getManageDrawResults(contentCode)
+      .then(setDrawResults)
+      .catch((e) => setDrawResultsError(e.message ?? "추첨 결과를 불러오지 못했습니다"))
+      .finally(() => setDrawResultsLoading(false));
   }, [contentCode]);
 
   const shareLink = `${window.location.origin}/draw?contentCode=${contentCode}`;
@@ -756,30 +771,51 @@ const ManageContent: React.FC = () => {
           </Card>
         </TabsContent>
 
-        {/* ── Results (mock) ── */}
+        {/* ── Results ── */}
         <TabsContent value="results">
           <Card>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-muted-foreground">
-                      <th className="px-5 py-2">코드</th>
-                      <th className="px-5 py-2">보상</th>
-                      <th className="px-5 py-2">시간</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockResults.map((r) => (
-                      <tr key={r.id} className="border-b last:border-0">
-                        <td className="px-5 py-2.5 font-mono text-xs text-foreground">{r.code}</td>
-                        <td className="px-5 py-2.5 text-foreground">{r.reward}</td>
-                        <td className="px-5 py-2.5 text-muted-foreground">{r.drawnAt}</td>
+              {drawResultsLoading && (
+                <p className="text-center text-muted-foreground py-6 text-sm">불러오는 중...</p>
+              )}
+              {!drawResultsLoading && drawResultsError && (
+                <p className="text-center text-destructive py-6 text-sm">{drawResultsError}</p>
+              )}
+              {!drawResultsLoading && !drawResultsError && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-muted-foreground">
+                        <th className="px-5 py-2">코드</th>
+                        <th className="px-5 py-2">이름</th>
+                        <th className="px-5 py-2">보상</th>
+                        <th className="px-5 py-2 text-center">지급</th>
+                        <th className="px-5 py-2">시간</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {drawResults.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-5 py-6 text-center text-muted-foreground">추첨 결과가 없습니다</td>
+                        </tr>
+                      )}
+                      {drawResults.map((r) => (
+                        <tr key={r.drawResultId} className="border-b last:border-0">
+                          <td className="px-5 py-2.5 font-mono text-xs text-foreground">{r.invitationCode}</td>
+                          <td className="px-5 py-2.5 text-foreground">{r.invitationCodeName || "—"}</td>
+                          <td className="px-5 py-2.5 text-foreground">{r.rewardName}</td>
+                          <td className="px-5 py-2.5 text-center">
+                            <Badge variant={r.delivered ? "default" : "secondary"}>{r.delivered ? "지급완료" : "미지급"}</Badge>
+                          </td>
+                          <td className="px-5 py-2.5 text-muted-foreground">
+                            {new Date(r.drawnAt).toLocaleString("ko-KR")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
