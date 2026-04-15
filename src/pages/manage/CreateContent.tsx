@@ -11,10 +11,10 @@ import { Trash2, Plus, Shuffle, ArrowLeft, ArrowRight, Gift, HelpCircle, Message
 import { createManageContent, createManageReward, createManageInvitationCode } from "@/api/client";
 import type { ContentType } from "@/data/manageMockData";
 
-const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string }[] = [
+const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string; disabled?: boolean }[] = [
   { value: "draw", label: "뽑기", icon: <Gift className="h-7 w-7" />, desc: "보상을 설정하고 참여자가 뽑기" },
-  { value: "quiz", label: "퀴즈", icon: <HelpCircle className="h-7 w-7" />, desc: "정답을 맞추면 보상 지급" },
-  { value: "messagebox", label: "메시지함", icon: <MessageSquare className="h-7 w-7" />, desc: "익명으로 메시지를 남기기" },
+  { value: "quiz", label: "퀴즈", icon: <HelpCircle className="h-7 w-7" />, desc: "준비 중인 기능입니다", disabled: true },
+  { value: "messagebox", label: "메시지함", icon: <MessageSquare className="h-7 w-7" />, desc: "준비 중인 기능입니다", disabled: true },
 ];
 
 interface RewardRow {
@@ -138,13 +138,14 @@ const CreateContent: React.FC = () => {
           {typeOptions.map((opt) => (
             <Card
               key={opt.value}
-              className={`cursor-pointer transition-shadow hover:shadow-md ${contentType === opt.value ? "ring-2 ring-primary" : ""}`}
-              onClick={() => setContentType(opt.value)}
+              className={`transition-shadow ${opt.disabled ? "opacity-50 cursor-not-allowed bg-muted/50" : "cursor-pointer hover:shadow-md"} ${contentType === opt.value ? "ring-2 ring-primary" : ""}`}
+              onClick={() => !opt.disabled && setContentType(opt.value)}
             >
               <CardContent className="flex flex-col items-center gap-2 p-6 text-center">
-                <div className="text-primary">{opt.icon}</div>
+                <div className={`${opt.disabled ? "text-muted-foreground" : "text-primary"}`}>{opt.icon}</div>
                 <h3 className="font-semibold text-foreground">{opt.label}</h3>
                 <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                {opt.disabled && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground mt-1">Coming Soon</span>}
               </CardContent>
             </Card>
           ))}
