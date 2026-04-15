@@ -48,6 +48,7 @@ export interface DrawResultResponse {
   rewardImageUrl?: string;
   drawNo: number;
   drawnAt: string; // ISO date-time
+  delivered: boolean;
 }
 
 // GET /api/draw/contents/{contentCode}
