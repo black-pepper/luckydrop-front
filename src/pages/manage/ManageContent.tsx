@@ -24,6 +24,7 @@ import {
   updateManageInvitationCode,
   deleteManageInvitationCode,
   getManageDrawResults,
+  updateDeliveryStatus,
 } from "@/api/client";
 import type { ManageContentDetailResponse, ManageRewardResponse, ManageInvitationCodeResponse, ManageDrawResultResponse } from "@/api/types";
 
@@ -279,6 +280,7 @@ const ManageContent: React.FC = () => {
   const [drawResults, setDrawResults] = useState<ManageDrawResultResponse[]>([]);
   const [drawResultsLoading, setDrawResultsLoading] = useState(false);
   const [drawResultsError, setDrawResultsError] = useState<string | null>(null);
+  const [updatingDeliveryId, setUpdatingDeliveryId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!contentCode) return;
@@ -476,6 +478,18 @@ const ManageContent: React.FC = () => {
       setInviteCodes((prev) => prev.filter((c) => c.id !== invitationCodeId));
     } catch (e: any) {
       alert(e.message ?? "삭제에 실패했습니다");
+    }
+  };
+
+  const handleToggleDelivery = async (drawResultId: number, currentDelivered: boolean) => {
+    setUpdatingDeliveryId(drawResultId);
+    try {
+      const updated = await updateDeliveryStatus(drawResultId, { delivered: !currentDelivered });
+      setDrawResults((prev) => prev.map((r) => (r.drawResultId === drawResultId ? updated : r)));
+    } catch {
+      // 실패 시 상태 변경 없음
+    } finally {
+      setUpdatingDeliveryId(null);
     }
   };
 
@@ -805,7 +819,15 @@ const ManageContent: React.FC = () => {
                           <td className="px-5 py-2.5 text-foreground">{r.invitationCodeName || "—"}</td>
                           <td className="px-5 py-2.5 text-foreground">{r.rewardName}</td>
                           <td className="px-5 py-2.5 text-center">
-                            <Badge variant={r.delivered ? "default" : "secondary"}>{r.delivered ? "지급완료" : "미지급"}</Badge>
+                            <button
+                              onClick={() => handleToggleDelivery(r.drawResultId, r.delivered)}
+                              disabled={updatingDeliveryId === r.drawResultId}
+                              className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Badge variant={r.delivered ? "default" : "secondary"}>
+                                {updatingDeliveryId === r.drawResultId ? "저장 중..." : r.delivered ? "지급완료" : "미지급"}
+                              </Badge>
+                            </button>
                           </td>
                           <td className="px-5 py-2.5 text-muted-foreground">
                             {new Date(r.drawnAt).toLocaleString("ko-KR")}
