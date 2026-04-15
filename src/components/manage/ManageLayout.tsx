@@ -1,7 +1,8 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, PlusCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 const navItems = [
   { to: "/manage", label: "대시보드", icon: LayoutDashboard },
@@ -14,6 +15,12 @@ interface Props {
 
 const ManageLayout: React.FC<Props> = ({ children }) => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
 
   return (
     <div className="flex min-h-screen" style={{ background: "hsl(var(--manage-bg))" }}>
@@ -47,7 +54,7 @@ const ManageLayout: React.FC<Props> = ({ children }) => {
           })}
         </nav>
 
-        <button className="flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white/80 transition-colors mt-auto">
+        <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white/80 transition-colors mt-auto">
           <LogOut className="h-4 w-4" />
           로그아웃
         </button>
