@@ -388,6 +388,7 @@ const ManageContent: React.FC = () => {
         description: addForm.description || undefined,
         imageUrl: addForm.imageUrl || undefined,
         allowDuplicateReward: addForm.allowDuplicateReward,
+        active: true,
       });
       setRewards((prev) => [...prev, created]);
       setShowAddForm(false);
@@ -411,6 +412,7 @@ const ManageContent: React.FC = () => {
         description: editRewardForm.description || undefined,
         imageUrl: editRewardForm.imageUrl || undefined,
         allowDuplicateReward: editRewardForm.allowDuplicateReward,
+        active: true,
       });
       setRewards((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
       setEditingRewardId(null);
@@ -441,6 +443,7 @@ const ManageContent: React.FC = () => {
         code: addCodeForm.code,
         name: addCodeForm.name || undefined,
         allowedDrawCount: addCodeForm.allowedDrawCount,
+        active: true,
       });
       setInviteCodes((prev) => [...prev, created]);
       setShowAddCodeForm(false);

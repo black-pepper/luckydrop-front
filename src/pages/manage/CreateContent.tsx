@@ -95,6 +95,7 @@ const CreateContent: React.FC = () => {
             stock: r.unlimited ? undefined : r.stock,
             imageUrl: r.imageUrl || undefined,
             allowDuplicateReward: r.allowDuplicateReward,
+            active: true,
           })
         )
       );
@@ -107,6 +108,7 @@ const CreateContent: React.FC = () => {
               code: c.code.trim(),
               name: c.name || undefined,
               allowedDrawCount: c.allowedDrawCount,
+              active: true,
             })
           )
       );

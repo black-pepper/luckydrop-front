@@ -126,6 +126,7 @@ export interface RewardCreateRequest {
   stock?: number;
   imageUrl?: string;
   allowDuplicateReward?: boolean;
+  active: boolean;
 }
 
 // PUT /api/manage/rewards/{rewardId}
@@ -136,6 +137,7 @@ export interface RewardUpdateRequest {
   stock?: number;
   imageUrl?: string;
   allowDuplicateReward?: boolean;
+  active: boolean;
 }
 
 // Manage invitation code (추첨 코드) types
@@ -163,6 +165,7 @@ export interface InvitationCodeCreateRequest {
   name?: string;
   allowedDrawCount: number;
   expiresAt?: string; // ISO date-time
+  active: boolean;
 }
 
 // PUT /api/manage/invitation-codes/{invitationCodeId}
