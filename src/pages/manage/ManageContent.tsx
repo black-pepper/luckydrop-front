@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { DeliveryStatusButton } from "@/components/manage/DeliveryStatusButton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { StateToggleButton } from "@/components/ui/state-toggle-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save } from "lucide-react";
@@ -90,35 +91,44 @@ const RewardFormCard: React.FC<{
 }> = ({ formId, title, form, onChange, onSave, onCancel, saving, error }) => (
   <Card className="border border-primary/30 bg-muted/20">
     <CardContent className="p-4 space-y-3">
-      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <StateToggleButton
+          checked={form.active}
+          onCheckedChange={(v) => onChange({ ...form, active: v })}
+          checkedLabel="추첨 포함"
+          uncheckedLabel="추첨 제외"
+          className="h-7"
+        />
+      </div>
       <div className="space-y-1.5">
-        <Label className="text-sm">보상 이름</Label>
+        <Label className="text-sm pl-1">보상 이름</Label>
         <Input placeholder="예: 스타벅스 쿠폰" value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} />
       </div>
       <div className="space-y-1.5">
-        <Label className="text-sm">설명</Label>
+        <Label className="text-sm pl-1">설명</Label>
         <Input placeholder="보상에 대한 간단한 설명" value={form.description} onChange={(e) => onChange({ ...form, description: e.target.value })} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 pl-1">
             <Label className="text-sm">가중치</Label>
             <span className="text-[11px] text-muted-foreground">당첨 확률 비율에 사용되는 값</span>
           </div>
           <Input type="number" placeholder="10" value={form.weight} onChange={(e) => onChange({ ...form, weight: Number(e.target.value) })} />
         </div>
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 pl-1">
             <Label className="text-sm">수량</Label>
             <span className="text-[11px] text-muted-foreground">남아 있는 보상 개수</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              id={`unlimited-${formId}`}
+          <div className="flex items-center gap-1.5">
+            <StateToggleButton
               checked={form.unlimited}
-              onCheckedChange={(checked) => onChange({ ...form, unlimited: !!checked })}
+              onCheckedChange={(v) => onChange({ ...form, unlimited: v })}
+              checkedLabel="무제한"
+              uncheckedLabel="개수 지정"
             />
-            <Label htmlFor={`unlimited-${formId}`} className="text-xs text-muted-foreground cursor-pointer">무제한</Label>
             <Input
               type="number"
               placeholder="수량"
@@ -131,7 +141,7 @@ const RewardFormCard: React.FC<{
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label className="text-sm">이미지 URL</Label>
+        <Label className="text-sm pl-1">이미지 URL</Label>
         <div className="flex gap-3 items-start">
           <div className="shrink-0 w-[56px] h-[56px] rounded-md border border-dashed border-border bg-muted flex items-center justify-center overflow-hidden">
             {form.imageUrl ? (
@@ -148,16 +158,9 @@ const RewardFormCard: React.FC<{
           />
         </div>
       </div>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Switch
-            id={`active-${formId}`}
-            checked={form.active}
-            onCheckedChange={(checked) => onChange({ ...form, active: !!checked })}
-          />
-          <Label htmlFor={`active-${formId}`} className="text-sm cursor-pointer">활성화</Label>
-        </div>
-        <div className="flex items-center gap-2">
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex items-center justify-between pt-1">
+        <div className="flex items-center gap-2 pl-2">
           <Checkbox
             id={`dup-${formId}`}
             checked={form.allowDuplicateReward}
@@ -165,15 +168,14 @@ const RewardFormCard: React.FC<{
           />
           <Label htmlFor={`dup-${formId}`} className="text-sm cursor-pointer">중복 당첨 허용</Label>
         </div>
-      </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="flex gap-2 pt-1">
-        <Button size="sm" className="gap-1" onClick={onSave} disabled={saving}>
-          <Check className="h-3.5 w-3.5" /> {saving ? "저장 중..." : "저장"}
-        </Button>
-        <Button size="sm" variant="outline" className="gap-1" onClick={onCancel} disabled={saving}>
-          <X className="h-3.5 w-3.5" /> 취소
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" className="gap-1" onClick={onSave} disabled={saving}>
+            <Check className="h-3.5 w-3.5" /> {saving ? "저장 중..." : "저장"}
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1" onClick={onCancel} disabled={saving}>
+            <X className="h-3.5 w-3.5" /> 취소
+          </Button>
+        </div>
       </div>
     </CardContent>
   </Card>

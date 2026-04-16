@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { StateToggleButton } from "@/components/ui/state-toggle-button";
 import { Trash2, Plus, Shuffle, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
 import { createManageContent, createManageReward, createManageInvitationCode } from "@/api/client";
 import type { ContentType } from "@/data/manageMockData";
@@ -193,77 +194,81 @@ const CreateContent: React.FC = () => {
                   <CardContent className="p-3 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-foreground">보상 #{idx + 1}</span>
-                      <Button size="icon" variant="ghost" onClick={() => removeReward(r.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <StateToggleButton
+                        checked={r.active}
+                        onCheckedChange={(v) => updateReward(r.id, "active", v)}
+                        checkedLabel="추첨 포함"
+                        uncheckedLabel="추첨 제외"
+                        className="h-7"
+                      />
                     </div>
 
-                    <div className="flex gap-3 items-start">
-                      <div className="shrink-0 w-[52px] h-[52px] rounded-md border border-dashed border-border bg-muted flex items-center justify-center overflow-hidden">
-                        {r.imageUrl ? (
-                          <img src={r.imageUrl} alt={r.name || "보상 이미지"} className="w-full h-full object-cover" />
-                        ) : (
-                          <ImagePlus className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div className="flex-1 space-y-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm pl-1">보상 이름</Label>
+                      <Input
+                        placeholder="예: 스타벅스 쿠폰"
+                        value={r.name}
+                        onChange={(e) => updateReward(r.id, "name", e.target.value)}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5 pl-1">
+                          <Label className="text-sm">가중치</Label>
+                          <span className="text-[11px] text-muted-foreground">당첨 확률 비율</span>
+                        </div>
                         <Input
-                          placeholder="보상 이름 (예: 스타벅스 쿠폰)"
-                          value={r.name}
-                          onChange={(e) => updateReward(r.id, "name", e.target.value)}
+                          type="number"
+                          placeholder="가중치"
+                          value={r.weight}
+                          onChange={(e) => updateReward(r.id, "weight", Number(e.target.value))}
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <Label className="text-xs text-muted-foreground">가중치</Label>
-                              <span className="text-[10px] text-muted-foreground">당첨 확률 비율</span>
-                            </div>
-                            <Input
-                              type="number"
-                              placeholder="가중치"
-                              value={r.weight}
-                              onChange={(e) => updateReward(r.id, "weight", Number(e.target.value))}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">수량</Label>
-                            <div className="flex items-center gap-1.5">
-                              <Switch
-                                id={`unlimited-${r.id}`}
-                                checked={r.unlimited}
-                                onCheckedChange={(checked) => updateReward(r.id, "unlimited", checked)}
-                              />
-                              <Label htmlFor={`unlimited-${r.id}`} className="text-[10px] text-muted-foreground cursor-pointer">무제한</Label>
-                              <Input
-                                type="number"
-                                placeholder="수량"
-                                value={r.stock}
-                                onChange={(e) => updateReward(r.id, "stock", Number(e.target.value))}
-                                disabled={r.unlimited}
-                                className={`flex-1 ${r.unlimited ? "opacity-50" : ""}`}
-                              />
-                            </div>
-                          </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5 pl-1">
+                          <Label className="text-sm">수량</Label>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <StateToggleButton
+                            checked={r.unlimited}
+                            onCheckedChange={(v) => updateReward(r.id, "unlimited", v)}
+                            checkedLabel="무제한"
+                            uncheckedLabel="개수 지정"
+                          />
+                          <Input
+                            type="number"
+                            placeholder="수량"
+                            value={r.stock}
+                            onChange={(e) => updateReward(r.id, "stock", Number(e.target.value))}
+                            disabled={r.unlimited}
+                            className={`flex-1 ${r.unlimited ? "opacity-50" : ""}`}
+                          />
                         </div>
                       </div>
                     </div>
 
-                    <Input
-                      placeholder="이미지 URL (선택사항)"
-                      value={r.imageUrl}
-                      onChange={(e) => updateReward(r.id, "imageUrl", e.target.value)}
-                    />
-
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          id={`active-${r.id}`}
-                          checked={r.active}
-                          onCheckedChange={(checked) => updateReward(r.id, "active", checked)}
+                    <div className="space-y-1.5">
+                      <Label className="text-sm pl-1">이미지 URL</Label>
+                      <div className="flex gap-3 items-start">
+                        <div className="shrink-0 w-[56px] h-[56px] rounded-md border border-dashed border-border bg-muted flex items-center justify-center overflow-hidden">
+                          {r.imageUrl ? (
+                            <img src={r.imageUrl} alt={r.name || "보상 이미지"} className="w-full h-full object-cover" />
+                          ) : (
+                            <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <Input
+                          className="flex-1"
+                          placeholder="이미지 URL (선택사항)"
+                          value={r.imageUrl}
+                          onChange={(e) => updateReward(r.id, "imageUrl", e.target.value)}
                         />
-                        <Label htmlFor={`active-${r.id}`} className="text-sm cursor-pointer">활성화</Label>
                       </div>
-                      <div className="flex items-center gap-2">
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center gap-2 pl-2">
                         <Checkbox
                           id={`duplicate-${r.id}`}
                           checked={r.allowDuplicateReward}
@@ -271,6 +276,9 @@ const CreateContent: React.FC = () => {
                         />
                         <Label htmlFor={`duplicate-${r.id}`} className="text-sm cursor-pointer">중복 당첨 허용</Label>
                       </div>
+                      <Button size="icon" variant="ghost" onClick={() => removeReward(r.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
