@@ -50,7 +50,7 @@ const DrawBox = ({ onComplete }: DrawBoxProps) => {
         onClick={handleDraw}
         disabled={phase !== "ready"}
         className={`
-          w-40 h-40 rounded-3xl flex items-center justify-center text-7xl
+          w-40 h-40 rounded-2xl flex items-center justify-center text-7xl
           transition-all cursor-pointer select-none
           ${phase === "ready" ? "bg-lemon/60 hover:bg-lemon/80 animate-float shadow-[var(--shadow-card)]" : ""}
           ${phase === "shaking" ? "bg-peach/60 animate-shake animate-sparkle" : ""}

@@ -115,7 +115,7 @@ const RoleEntrySection = () => {
           <Card key={r.title} className={`border-2 ${r.style} hover:shadow-lg transition-shadow`}>
             <CardContent className="p-6 flex flex-col gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-background shadow-sm">{r.icon}</div>
+                <div className="p-2 rounded-lg bg-background shadow-sm">{r.icon}</div>
                 <h3 className="text-lg font-bold text-foreground">{r.title}</h3>
               </div>
               <p className="text-sm text-muted-foreground">{r.desc}</p>
