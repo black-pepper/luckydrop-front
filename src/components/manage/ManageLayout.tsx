@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, PlusCircle, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,18 +17,22 @@ const ManageLayout: React.FC<Props> = ({ children }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.body.style.backgroundColor = "hsl(var(--manage-bg))";
+    return () => {
+      document.body.style.backgroundColor = "";
+    };
+  }, []);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
 
   return (
-    <div className="flex min-h-screen" style={{ background: "hsl(var(--manage-bg))" }}>
+    <div className="flex min-h-screen bg-manage-bg">
       {/* Sidebar */}
-      <aside
-        className="hidden md:flex flex-col w-56 shrink-0 p-4 gap-2"
-        style={{ background: "hsl(var(--manage-sidebar))", color: "hsl(var(--manage-sidebar-foreground))" }}
-      >
+      <aside className="hidden md:flex flex-col w-56 shrink-0 p-4 gap-2 bg-manage-sidebar text-manage-sidebar-foreground">
         <Link to="/manage" className="text-lg font-bold px-3 py-4 tracking-tight">
           🎯 LuckyDrop
         </Link>
@@ -61,9 +65,7 @@ const ManageLayout: React.FC<Props> = ({ children }) => {
       </aside>
 
       {/* Mobile header */}
-      <div className="md:hidden fixed top-0 inset-x-0 z-30 flex items-center justify-between px-4 h-14 border-b"
-        style={{ background: "hsl(var(--manage-sidebar))", color: "hsl(var(--manage-sidebar-foreground))", borderColor: "hsl(var(--manage-border))" }}
-      >
+      <div className="md:hidden fixed top-0 inset-x-0 z-30 flex items-center justify-between px-4 h-14 border-b bg-manage-sidebar text-manage-sidebar-foreground border-manage-border">
         <Link to="/manage" className="font-bold text-base">🎯 LuckyDrop</Link>
         <div className="flex gap-3">
           {navItems.map((item) => (

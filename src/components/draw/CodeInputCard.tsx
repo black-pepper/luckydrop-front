@@ -18,7 +18,7 @@ const CodeInputCard = ({ onSubmit, error, loading }: CodeInputCardProps) => {
   return (
     <div className="animate-bounce-in flex flex-col items-center gap-6 w-full max-w-sm mx-auto">
       <div className="animate-float">
-        <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
+        <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
           <Gift className="w-10 h-10 text-primary" />
         </div>
       </div>

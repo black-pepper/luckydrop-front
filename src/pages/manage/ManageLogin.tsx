@@ -121,10 +121,7 @@ const ManageLogin: React.FC = () => {
   };
 
   return (
-    <div
-      className="flex items-center justify-center min-h-screen px-4"
-      style={{ background: "hsl(var(--manage-bg))" }}
-    >
+    <div className="flex items-center justify-center min-h-screen px-4 bg-manage-bg">
       <Card className="w-full max-w-sm text-center shadow-lg">
         <CardContent className="p-8 space-y-6">
           <div className="text-4xl">🎯</div>

@@ -11,7 +11,7 @@ interface Props {
 }
 
 const typeColorMap: Record<string, string> = {
-  draw: "bg-primary/15 text-primary",
+  draw: "bg-manage-accent/10 text-manage-accent border-manage-accent/20",
   quiz: "bg-secondary/20 text-secondary-foreground",
   messagebox: "bg-accent/20 text-accent-foreground",
 };

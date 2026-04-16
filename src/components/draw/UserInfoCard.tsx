@@ -26,7 +26,7 @@ const UserInfoCard = ({
 
   return (
     <div className="animate-bounce-in flex flex-col items-center gap-5 w-full max-w-sm mx-auto">
-      <div className="w-full rounded-3xl bg-card p-6 shadow-[var(--shadow-card)] space-y-5">
+      <div className="w-full rounded-2xl bg-card p-6 shadow-[var(--shadow-card)] space-y-5">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-secondary/40 flex items-center justify-center">
             <User className="w-6 h-6 text-secondary-foreground" />

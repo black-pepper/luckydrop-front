@@ -47,7 +47,7 @@ const ResultCard = ({ rewardName, rewardImageUrl, drawNo, remainingDraws, onDraw
 
   return (
     <div className="animate-bounce-in flex flex-col items-center gap-5 w-full max-w-sm mx-auto">
-      <div className={`w-full rounded-3xl bg-gradient-to-br ${gradeBg[grade]} p-6 shadow-[var(--shadow-card)] text-center space-y-4`}>
+      <div className={`w-full rounded-2xl bg-gradient-to-br ${gradeBg[grade]} p-6 shadow-[var(--shadow-card)] text-center space-y-4`}>
         <div className="flex justify-center">
           <div className="animate-pop w-14 h-14 rounded-2xl bg-card/80 flex items-center justify-center">
             <Sparkles className="w-7 h-7 text-primary" />
