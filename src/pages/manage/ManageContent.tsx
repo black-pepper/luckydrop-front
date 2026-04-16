@@ -6,13 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { DeliveryStatusButton } from "@/components/manage/DeliveryStatusButton";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { StateToggleButton } from "@/components/ui/state-toggle-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save } from "lucide-react";
+import { generateCode } from "@/lib/utils";
 import {
   getManageContentDetail,
   updateManageContent,
@@ -195,7 +194,18 @@ const InvitationCodeFormCard: React.FC<{
 }> = ({ title, form, onChange, onSave, onCancel, saving, error, isEdit }) => (
   <Card className="border border-primary/30 bg-muted/20">
     <CardContent className="p-4 space-y-3">
-      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        {isEdit && (
+          <StateToggleButton
+            checked={form.active}
+            onCheckedChange={(v) => onChange({ ...form, active: v })}
+            checkedLabel="활성화"
+            uncheckedLabel="비활성화"
+            className="h-7"
+          />
+        )}
+      </div>
       {!isEdit && (
         <div className="space-y-1.5">
           <Label className="text-sm">코드</Label>
@@ -205,25 +215,15 @@ const InvitationCodeFormCard: React.FC<{
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label className="text-sm">참여자 이름</Label>
-          <Input placeholder="참여자 이름 (선택)" value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} />
+          <Input placeholder="참여자 이름" value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} />
         </div>
         <div className="space-y-1.5">
           <Label className="text-sm">허용 횟수</Label>
           <Input type="number" placeholder="1" value={form.allowedDrawCount} onChange={(e) => onChange({ ...form, allowedDrawCount: Number(e.target.value) })} />
         </div>
       </div>
-      {isEdit && (
-        <div className="flex items-center gap-2">
-          <Switch
-            id="code-active"
-            checked={form.active}
-            onCheckedChange={(checked) => onChange({ ...form, active: !!checked })}
-          />
-          <Label htmlFor="code-active" className="text-sm cursor-pointer">활성화</Label>
-        </div>
-      )}
       {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="flex gap-2 pt-1">
+      <div className="flex gap-2 pt-1 justify-end">
         <Button size="sm" className="gap-1" onClick={onSave} disabled={saving}>
           <Check className="h-3.5 w-3.5" /> {saving ? "저장 중..." : "저장"}
         </Button>
@@ -571,7 +571,7 @@ const ManageContent: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-sm">콘텐츠 이름</Label>
+                <Label className="text-sm pl-1">콘텐츠 이름</Label>
                 {isEditingInfo ? (
                   <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="콘텐츠 이름" />
                 ) : (
@@ -579,7 +579,7 @@ const ManageContent: React.FC = () => {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">설명</Label>
+                <Label className="text-sm pl-1">설명</Label>
                 {isEditingInfo ? (
                   <Textarea
                     value={editDescription}
@@ -592,18 +592,7 @@ const ManageContent: React.FC = () => {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">콘텐츠 타입</Label>
-                <p className="text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
-                  {typeLabel[content.type] ?? content.type}
-                  <span className="text-[11px] ml-2">(변경 불가)</span>
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm">콘텐츠 코드</Label>
-                <p className="text-sm font-mono text-muted-foreground bg-muted/30 rounded-md px-3 py-2">{content.code}</p>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm">생성일</Label>
+                <Label className="text-sm pl-1">생성일</Label>
                 <p className="text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
                   {new Date(content.createdAt).toLocaleString("ko-KR")}
                 </p>
@@ -619,7 +608,7 @@ const ManageContent: React.FC = () => {
                 </div>
               )}
               {saveError && <p className="text-sm text-destructive">{saveError}</p>}
-              <div className="pt-2 border-t border-border">
+              <div className="pt-2 border-t border-border flex justify-end">
                 <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting}>
                   {deleting ? "삭제 중..." : "콘텐츠 삭제"}
                 </Button>
@@ -715,7 +704,7 @@ const ManageContent: React.FC = () => {
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base">추첨 코드 목록</CardTitle>
               {!showAddCodeForm && (
-                <Button size="sm" variant="outline" className="gap-1" onClick={() => { setShowAddCodeForm(true); setAddCodeForm(emptyCodeForm()); setAddCodeError(null); }}>
+                <Button size="sm" variant="outline" className="gap-1" onClick={() => { setShowAddCodeForm(true); setAddCodeForm({ ...emptyCodeForm(), code: generateCode() }); setAddCodeError(null); }}>
                   <Plus className="h-3.5 w-3.5" /> 추가
                 </Button>
               )}
@@ -841,10 +830,12 @@ const ManageContent: React.FC = () => {
                           <td className="px-5 py-2.5 text-foreground">{r.invitationCodeName || "—"}</td>
                           <td className="px-5 py-2.5 text-foreground">{r.rewardName}</td>
                           <td className="px-5 py-2.5 text-center">
-                            <DeliveryStatusButton
-                              delivered={r.delivered}
-                              loading={updatingDeliveryId === r.drawResultId}
-                              onClick={() => handleToggleDelivery(r.drawResultId, r.delivered)}
+                            <StateToggleButton
+                              checked={r.delivered}
+                              onCheckedChange={() => handleToggleDelivery(r.drawResultId, r.delivered)}
+                              checkedLabel="지급완료"
+                              uncheckedLabel="미지급"
+                              className={`h-7 ${updatingDeliveryId === r.drawResultId ? "opacity-50 pointer-events-none" : ""}`}
                             />
                           </td>
                           <td className="px-5 py-2.5 text-muted-foreground">

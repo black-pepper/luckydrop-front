@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { StateToggleButton } from "@/components/ui/state-toggle-button";
 import { Trash2, Plus, Shuffle, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
 import { createManageContent, createManageReward, createManageInvitationCode } from "@/api/client";
+import { generateCode } from "@/lib/utils";
 import type { ContentType } from "@/data/manageMockData";
 
 const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string; disabled?: boolean }[] = [
@@ -64,7 +65,7 @@ const CreateContent: React.FC = () => {
   const autoGenCodes = () => {
     const generated = Array.from({ length: 3 }, (_, i) => ({
       id: Date.now() + i,
-      code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+      code: generateCode(),
       name: "",
       allowedDrawCount: 1,
     }));
