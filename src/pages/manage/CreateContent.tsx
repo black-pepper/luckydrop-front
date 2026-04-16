@@ -25,13 +25,14 @@ interface RewardRow {
   imageUrl: string;
   unlimited: boolean;
   allowDuplicateReward: boolean;
+  active: boolean;
 }
 interface CodeRow { id: number; code: string; name: string; allowedDrawCount: number }
 
 const initialRewards: RewardRow[] = [
-  { id: 1, name: "스타벅스 쿠폰", weight: 10, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: false },
-  { id: 2, name: "비타500", weight: 25, stock: 54, imageUrl: "", unlimited: false, allowDuplicateReward: false },
-  { id: 3, name: "꽝", weight: 60, stock: 999, imageUrl: "", unlimited: true, allowDuplicateReward: false },
+  { id: 1, name: "스타벅스 쿠폰", weight: 10, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: false, active: true },
+  { id: 2, name: "비타500", weight: 25, stock: 54, imageUrl: "", unlimited: false, allowDuplicateReward: false, active: true },
+  { id: 3, name: "꽝", weight: 60, stock: 999, imageUrl: "", unlimited: true, allowDuplicateReward: false, active: true },
 ];
 
 const initialCodes: CodeRow[] = [];
@@ -50,7 +51,7 @@ const CreateContent: React.FC = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const addReward = () =>
-    setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, stock: 10, imageUrl: "", unlimited: false, allowDuplicateReward: false }]);
+    setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, stock: 10, imageUrl: "", unlimited: true, allowDuplicateReward: false, active: true }]);
   const removeReward = (id: number) => setRewards((r) => r.filter((x) => x.id !== id));
   const updateReward = (id: number, field: keyof RewardRow, value: string | number | boolean) =>
     setRewards((r) => r.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
@@ -95,7 +96,7 @@ const CreateContent: React.FC = () => {
             stock: r.unlimited ? undefined : r.stock,
             imageUrl: r.imageUrl || undefined,
             allowDuplicateReward: r.allowDuplicateReward,
-            active: true,
+            active: r.active,
           })
         )
       );
@@ -189,7 +190,7 @@ const CreateContent: React.FC = () => {
             <CardContent className="space-y-4">
               {rewards.map((r, idx) => (
                 <Card key={r.id} className="border border-border bg-muted/30">
-                  <CardContent className="p-4 space-y-4">
+                  <CardContent className="p-3 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-foreground">보상 #{idx + 1}</span>
                       <Button size="icon" variant="ghost" onClick={() => removeReward(r.id)}>
@@ -197,76 +198,79 @@ const CreateContent: React.FC = () => {
                       </Button>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-sm">보상 이름</Label>
-                      <Input
-                        placeholder="예: 스타벅스 쿠폰"
-                        value={r.name}
-                        onChange={(e) => updateReward(r.id, "name", e.target.value)}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-sm">가중치</Label>
+                    <div className="flex gap-3 items-start">
+                      <div className="shrink-0 w-[52px] h-[52px] rounded-md border border-dashed border-border bg-muted flex items-center justify-center overflow-hidden">
+                        {r.imageUrl ? (
+                          <img src={r.imageUrl} alt={r.name || "보상 이미지"} className="w-full h-full object-cover" />
+                        ) : (
+                          <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-2">
                         <Input
-                          type="number"
-                          placeholder="예: 10"
-                          value={r.weight}
-                          onChange={(e) => updateReward(r.id, "weight", Number(e.target.value))}
+                          placeholder="보상 이름 (예: 스타벅스 쿠폰)"
+                          value={r.name}
+                          onChange={(e) => updateReward(r.id, "name", e.target.value)}
                         />
-                        <p className="text-[11px] text-muted-foreground">당첨 확률 비율에 사용되는 값</p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-sm">수량</Label>
-                        <Input
-                          type="number"
-                          placeholder="예: 5"
-                          value={r.stock}
-                          onChange={(e) => updateReward(r.id, "stock", Number(e.target.value))}
-                          disabled={r.unlimited}
-                          className={r.unlimited ? "opacity-50" : ""}
-                        />
-                        <p className="text-[11px] text-muted-foreground">남아 있는 보상 개수</p>
-                        <div className="flex items-center gap-2 pt-1">
-                          <Switch
-                            id={`unlimited-${r.id}`}
-                            checked={r.unlimited}
-                            onCheckedChange={(checked) => updateReward(r.id, "unlimited", checked)}
-                          />
-                          <Label htmlFor={`unlimited-${r.id}`} className="text-xs text-muted-foreground cursor-pointer">무제한</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <Label className="text-xs text-muted-foreground">가중치</Label>
+                              <span className="text-[10px] text-muted-foreground">당첨 확률 비율</span>
+                            </div>
+                            <Input
+                              type="number"
+                              placeholder="가중치"
+                              value={r.weight}
+                              onChange={(e) => updateReward(r.id, "weight", Number(e.target.value))}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">수량</Label>
+                            <div className="flex items-center gap-1.5">
+                              <Switch
+                                id={`unlimited-${r.id}`}
+                                checked={r.unlimited}
+                                onCheckedChange={(checked) => updateReward(r.id, "unlimited", checked)}
+                              />
+                              <Label htmlFor={`unlimited-${r.id}`} className="text-[10px] text-muted-foreground cursor-pointer">무제한</Label>
+                              <Input
+                                type="number"
+                                placeholder="수량"
+                                value={r.stock}
+                                onChange={(e) => updateReward(r.id, "stock", Number(e.target.value))}
+                                disabled={r.unlimited}
+                                className={`flex-1 ${r.unlimited ? "opacity-50" : ""}`}
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-sm">보상 이미지</Label>
-                      <div className="flex gap-3 items-start">
-                        <div className="shrink-0 w-[72px] h-[72px] rounded-lg border border-dashed border-border bg-muted flex items-center justify-center overflow-hidden">
-                          {r.imageUrl ? (
-                            <img src={r.imageUrl} alt={r.name || "보상 이미지"} className="w-full h-full object-cover" />
-                          ) : (
-                            <ImagePlus className="h-6 w-6 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <Input
-                            placeholder="이미지 URL을 입력하세요"
-                            value={r.imageUrl}
-                            onChange={(e) => updateReward(r.id, "imageUrl", e.target.value)}
-                          />
-                          <p className="text-[11px] text-muted-foreground">보상 대표 이미지 URL (선택사항)</p>
-                        </div>
-                      </div>
-                    </div>
+                    <Input
+                      placeholder="이미지 URL (선택사항)"
+                      value={r.imageUrl}
+                      onChange={(e) => updateReward(r.id, "imageUrl", e.target.value)}
+                    />
 
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id={`duplicate-${r.id}`}
-                        checked={r.allowDuplicateReward}
-                        onCheckedChange={(checked) => updateReward(r.id, "allowDuplicateReward", !!checked)}
-                      />
-                      <Label htmlFor={`duplicate-${r.id}`} className="text-sm cursor-pointer">중복 당첨 허용</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id={`active-${r.id}`}
+                          checked={r.active}
+                          onCheckedChange={(checked) => updateReward(r.id, "active", checked)}
+                        />
+                        <Label htmlFor={`active-${r.id}`} className="text-sm cursor-pointer">활성화</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`duplicate-${r.id}`}
+                          checked={r.allowDuplicateReward}
+                          onCheckedChange={(checked) => updateReward(r.id, "allowDuplicateReward", !!checked)}
+                        />
+                        <Label htmlFor={`duplicate-${r.id}`} className="text-sm cursor-pointer">중복 당첨 허용</Label>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

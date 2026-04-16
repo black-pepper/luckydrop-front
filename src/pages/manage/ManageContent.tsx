@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { DeliveryStatusButton } from "@/components/manage/DeliveryStatusButton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -56,11 +57,12 @@ interface RewardFormState {
   unlimited: boolean;
   imageUrl: string;
   allowDuplicateReward: boolean;
+  active: boolean;
 }
 
 const emptyForm = (): RewardFormState => ({
   name: "", description: "", weight: 10, stock: 10,
-  unlimited: false, imageUrl: "", allowDuplicateReward: false,
+  unlimited: true, imageUrl: "", allowDuplicateReward: false, active: true,
 });
 
 const fromApiReward = (r: ManageRewardResponse): RewardFormState => ({
@@ -71,6 +73,7 @@ const fromApiReward = (r: ManageRewardResponse): RewardFormState => ({
   unlimited: r.stock == null,
   imageUrl: r.imageUrl ?? "",
   allowDuplicateReward: r.allowDuplicateReward,
+  active: r.active,
 });
 
 // ── RewardFormCard ──────────────────────────────────────────────────────────
@@ -98,28 +101,32 @@ const RewardFormCard: React.FC<{
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-sm">가중치</Label>
+          <div className="flex items-center gap-1.5">
+            <Label className="text-sm">가중치</Label>
+            <span className="text-[11px] text-muted-foreground">당첨 확률 비율에 사용되는 값</span>
+          </div>
           <Input type="number" placeholder="10" value={form.weight} onChange={(e) => onChange({ ...form, weight: Number(e.target.value) })} />
-          <p className="text-[11px] text-muted-foreground">당첨 확률 비율에 사용되는 값</p>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-sm">수량</Label>
-          <Input
-            type="number"
-            placeholder="5"
-            value={form.stock}
-            disabled={form.unlimited}
-            className={form.unlimited ? "opacity-50" : ""}
-            onChange={(e) => onChange({ ...form, stock: Number(e.target.value) })}
-          />
-          <p className="text-[11px] text-muted-foreground">남아 있는 보상 개수</p>
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-1.5">
+            <Label className="text-sm">수량</Label>
+            <span className="text-[11px] text-muted-foreground">남아 있는 보상 개수</span>
+          </div>
+          <div className="flex items-center gap-2">
             <Switch
               id={`unlimited-${formId}`}
               checked={form.unlimited}
               onCheckedChange={(checked) => onChange({ ...form, unlimited: !!checked })}
             />
             <Label htmlFor={`unlimited-${formId}`} className="text-xs text-muted-foreground cursor-pointer">무제한</Label>
+            <Input
+              type="number"
+              placeholder="수량"
+              value={form.stock}
+              disabled={form.unlimited}
+              className={`flex-1 ${form.unlimited ? "opacity-50" : ""}`}
+              onChange={(e) => onChange({ ...form, stock: Number(e.target.value) })}
+            />
           </div>
         </div>
       </div>
@@ -141,13 +148,23 @@ const RewardFormCard: React.FC<{
           />
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id={`dup-${formId}`}
-          checked={form.allowDuplicateReward}
-          onCheckedChange={(checked) => onChange({ ...form, allowDuplicateReward: !!checked })}
-        />
-        <Label htmlFor={`dup-${formId}`} className="text-sm cursor-pointer">중복 당첨 허용</Label>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Switch
+            id={`active-${formId}`}
+            checked={form.active}
+            onCheckedChange={(checked) => onChange({ ...form, active: !!checked })}
+          />
+          <Label htmlFor={`active-${formId}`} className="text-sm cursor-pointer">활성화</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={`dup-${formId}`}
+            checked={form.allowDuplicateReward}
+            onCheckedChange={(checked) => onChange({ ...form, allowDuplicateReward: !!checked })}
+          />
+          <Label htmlFor={`dup-${formId}`} className="text-sm cursor-pointer">중복 당첨 허용</Label>
+        </div>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-2 pt-1">
@@ -388,7 +405,7 @@ const ManageContent: React.FC = () => {
         description: addForm.description || undefined,
         imageUrl: addForm.imageUrl || undefined,
         allowDuplicateReward: addForm.allowDuplicateReward,
-        active: true,
+        active: addForm.active,
       });
       setRewards((prev) => [...prev, created]);
       setShowAddForm(false);
@@ -412,7 +429,7 @@ const ManageContent: React.FC = () => {
         description: editRewardForm.description || undefined,
         imageUrl: editRewardForm.imageUrl || undefined,
         allowDuplicateReward: editRewardForm.allowDuplicateReward,
-        active: true,
+        active: editRewardForm.active,
       });
       setRewards((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
       setEditingRewardId(null);
@@ -822,15 +839,11 @@ const ManageContent: React.FC = () => {
                           <td className="px-5 py-2.5 text-foreground">{r.invitationCodeName || "—"}</td>
                           <td className="px-5 py-2.5 text-foreground">{r.rewardName}</td>
                           <td className="px-5 py-2.5 text-center">
-                            <button
+                            <DeliveryStatusButton
+                              delivered={r.delivered}
+                              loading={updatingDeliveryId === r.drawResultId}
                               onClick={() => handleToggleDelivery(r.drawResultId, r.delivered)}
-                              disabled={updatingDeliveryId === r.drawResultId}
-                              className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Badge variant={r.delivered ? "default" : "secondary"}>
-                                {updatingDeliveryId === r.drawResultId ? "저장 중..." : r.delivered ? "지급완료" : "미지급"}
-                              </Badge>
-                            </button>
+                            />
                           </td>
                           <td className="px-5 py-2.5 text-muted-foreground">
                             {new Date(r.drawnAt).toLocaleString("ko-KR")}
