@@ -1,11 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import CodeInputCard from "@/components/draw/CodeInputCard";
 import UserInfoCard from "@/components/draw/UserInfoCard";
 import DrawBox from "@/components/draw/DrawBox";
 import ResultCard from "@/components/draw/ResultCard";
 import ResultHistoryList from "@/components/draw/ResultHistoryList";
-import { verifyCode, executeDraw, getResults } from "@/api/client";
+import { verifyCode, executeDraw, getResults, getParticipantContentDetail } from "@/api/client";
 import type { DrawParticipantParams, DrawResponse, DrawResultResponse } from "@/api/types";
 
 type AppState = "code" | "user" | "drawing" | "result" | "history";
@@ -21,6 +21,13 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // 컨텐츠 정보
+  const [contentTitle, setContentTitle] = useState<string | null>(null);
+  const [contentDescription, setContentDescription] = useState<string | null>(null);
+  const [contentStartAt, setContentStartAt] = useState<string | null>(null);
+  const [contentEndAt, setContentEndAt] = useState<string | null>(null);
+  const [isExpired, setIsExpired] = useState(false);
+
   // 뽑기 결과
   const [drawResult, setDrawResult] = useState<DrawResponse | null>(null);
 
@@ -28,6 +35,26 @@ const Index = () => {
   const [history, setHistory] = useState<DrawResultResponse[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyReturnState, setHistoryReturnState] = useState<HistoryReturnState>("user");
+
+  // 컨텐츠 상세 조회 및 기간 판별
+  useEffect(() => {
+    if (!contentCode) return;
+    getParticipantContentDetail(contentCode)
+      .then((data) => {
+        setContentTitle(data.title ?? null);
+        setContentDescription(data.description ?? null);
+        setContentStartAt(data.startAt ?? null);
+        setContentEndAt(data.endAt ?? null);
+
+        const now = new Date();
+        const started = data.startAt ? now >= new Date(data.startAt) : true;
+        const notEnded = data.endAt ? now <= new Date(data.endAt) : true;
+        setIsExpired(!(started && notEnded));
+      })
+      .catch(() => {
+        // 상세 정보 실패 시 기본값 유지
+      });
+  }, [contentCode]);
 
   const getDrawParams = useCallback(
     (nextInvitationCode?: string): DrawParticipantParams => ({
@@ -127,7 +154,15 @@ const Index = () => {
 
       <div className="w-full max-w-sm">
         {state === "code" && (
-          <CodeInputCard onSubmit={handleCodeSubmit} error={error} loading={loading} />
+          <CodeInputCard
+            onSubmit={handleCodeSubmit}
+            error={error}
+            loading={loading}
+            title={contentTitle}
+            description={contentDescription}
+            startAt={contentStartAt}
+            endAt={contentEndAt}
+          />
         )}
         {state === "user" && (
           <UserInfoCard
@@ -136,6 +171,7 @@ const Index = () => {
             maskedName={maskedName}
             remainingDraws={remaining}
             hasHistory={true}
+            isExpired={isExpired}
             onDraw={handleStartDraw}
             onBack={handleReset}
             onViewHistory={handleViewHistory}

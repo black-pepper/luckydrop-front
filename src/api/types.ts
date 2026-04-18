@@ -58,6 +58,8 @@ export interface ParticipantContentDetailResponse {
   title: string;
   description: string;
   createdAt: string;
+  startAt?: string; // ISO date-time
+  endAt?: string;   // ISO date-time
 }
 
 // Manage content types
@@ -67,6 +69,8 @@ export interface ManageContentResponse {
   title: string;
   description: string;
   createdAt: string;
+  startAt?: string; // ISO date-time
+  endAt?: string;   // ISO date-time
 }
 
 export interface ManageContentDetailResponse {
@@ -75,18 +79,24 @@ export interface ManageContentDetailResponse {
   title: string;
   description: string;
   createdAt: string;
+  startAt?: string; // ISO date-time
+  endAt?: string;   // ISO date-time
 }
 
 export interface ManageContentCreateRequest {
   type: string;
   title: string;
   description: string;
+  startAt?: string; // ISO date-time
+  endAt?: string;   // ISO date-time
 }
 
 export interface ManageContentUpdateRequest {
   type: string;
   title: string;
   description: string;
+  startAt?: string; // ISO date-time
+  endAt?: string;   // ISO date-time
 }
 
 export interface ManageContentDeleteResponse {

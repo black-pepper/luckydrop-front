@@ -7,6 +7,7 @@ interface UserInfoCardProps {
   maskedName: string;
   remainingDraws: number;
   hasHistory: boolean;
+  isExpired?: boolean;
   onDraw: () => void;
   onBack: () => void;
   onViewHistory: () => void;
@@ -18,6 +19,7 @@ const UserInfoCard = ({
   maskedName,
   remainingDraws,
   hasHistory,
+  isExpired = false,
   onDraw,
   onBack,
   onViewHistory,
@@ -45,10 +47,20 @@ const UserInfoCard = ({
           </span>
         </div>
 
-        {noDrawsLeft ? (
-          <div className="text-center text-sm text-muted-foreground py-2">
-            사용할 수 있는 기회가 없습니다 😢
-          </div>
+        {isExpired ? (
+          <button
+            disabled
+            className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-lg opacity-60 cursor-not-allowed"
+          >
+            종료되었습니다.
+          </button>
+        ) : noDrawsLeft ? (
+          <button
+            disabled
+            className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-base opacity-60 cursor-not-allowed"
+          >
+            기회가 모두 소진되었습니다
+          </button>
         ) : (
           <button
             onClick={onDraw}

@@ -46,7 +46,8 @@ const CreateContent: React.FC = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
-  const [shareResult, setShareResult] = useState(false);
+  const [startAt, setStartAt] = useState("");
+  const [endAt, setEndAt] = useState("");
   const [rewards, setRewards] = useState<RewardRow[]>(initialRewards);
   const [codes, setCodes] = useState<CodeRow[]>(initialCodes);
   const [submitting, setSubmitting] = useState(false);
@@ -88,6 +89,8 @@ const CreateContent: React.FC = () => {
         type: contentType,
         title: title.trim(),
         description: description.trim(),
+        startAt: startAt ? new Date(startAt).toISOString() : undefined,
+        endAt: endAt ? new Date(endAt).toISOString() : undefined,
       });
       await Promise.all(
         rewards.map((r) =>
@@ -170,13 +173,27 @@ const CreateContent: React.FC = () => {
               <Label>설명 <span className="text-destructive">*</span></Label>
               <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="간단한 설명을 입력하세요" />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>시작일 <span className="text-muted-foreground text-xs">(선택)</span></Label>
+                <Input
+                  type="datetime-local"
+                  value={startAt}
+                  onChange={(e) => setStartAt(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>종료일 <span className="text-muted-foreground text-xs">(선택)</span></Label>
+                <Input
+                  type="datetime-local"
+                  value={endAt}
+                  onChange={(e) => setEndAt(e.target.value)}
+                />
+              </div>
+            </div>
             <div className="flex items-center justify-between">
               <Label>공개 여부</Label>
               <Switch checked={isPublic} onCheckedChange={setIsPublic} />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label>결과 공유 허용</Label>
-              <Switch checked={shareResult} onCheckedChange={setShareResult} />
             </div>
           </CardContent>
         </Card>

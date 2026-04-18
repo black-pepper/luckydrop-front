@@ -267,6 +267,8 @@ const ManageContent: React.FC = () => {
   const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editStartAt, setEditStartAt] = useState("");
+  const [editEndAt, setEditEndAt] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -320,6 +322,8 @@ const ManageContent: React.FC = () => {
         setContent(data);
         setEditTitle(data.title);
         setEditDescription(data.description);
+        setEditStartAt(data.startAt ? data.startAt.slice(0, 16) : "");
+        setEditEndAt(data.endAt ? data.endAt.slice(0, 16) : "");
       })
       .catch((e) => setError(e.message ?? "콘텐츠를 불러오지 못했습니다"))
       .finally(() => setLoading(false));
@@ -372,6 +376,8 @@ const ManageContent: React.FC = () => {
         type: content.type,
         title: editTitle,
         description: editDescription,
+        startAt: editStartAt ? new Date(editStartAt).toISOString() : undefined,
+        endAt: editEndAt ? new Date(editEndAt).toISOString() : undefined,
       });
       setContent({ ...updated, createdAt: content.createdAt });
       setIsEditingInfo(false);
@@ -386,6 +392,8 @@ const ManageContent: React.FC = () => {
     if (content) {
       setEditTitle(content.title);
       setEditDescription(content.description);
+      setEditStartAt(content.startAt ? content.startAt.slice(0, 16) : "");
+      setEditEndAt(content.endAt ? content.endAt.slice(0, 16) : "");
     }
     setIsEditingInfo(false);
     setSaveError(null);
@@ -601,14 +609,45 @@ const ManageContent: React.FC = () => {
                   <p className="text-sm text-foreground bg-muted/30 rounded-md px-3 py-2">{content.description}</p>
                 )}
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-sm pl-1">시작일 <span className="text-muted-foreground text-xs">(선택)</span></Label>
+                  {isEditingInfo ? (
+                    <Input
+                      type="datetime-local"
+                      value={editStartAt}
+                      onChange={(e) => setEditStartAt(e.target.value)}
+                    />
+                  ) : (
+                    <p className="text-sm text-foreground bg-muted/30 rounded-md px-3 py-2">
+                      {content.startAt ? new Date(content.startAt).toLocaleString("ko-KR") : "—"}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm pl-1">종료일 <span className="text-muted-foreground text-xs">(선택)</span></Label>
+                  {isEditingInfo ? (
+                    <Input
+                      type="datetime-local"
+                      value={editEndAt}
+                      onChange={(e) => setEditEndAt(e.target.value)}
+                    />
+                  ) : (
+                    <p className="text-sm text-foreground bg-muted/30 rounded-md px-3 py-2">
+                      {content.endAt ? new Date(content.endAt).toLocaleString("ko-KR") : "—"}
+                    </p>
+                  )}
+                </div>
+              </div>
               <div className="space-y-1.5">
                 <Label className="text-sm pl-1">생성일</Label>
                 <p className="text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
                   {new Date(content.createdAt).toLocaleString("ko-KR")}
                 </p>
               </div>
-              {isEditingInfo && (
-                <div className="flex gap-2 pt-2">
+              {saveError && <p className="text-sm text-destructive">{saveError}</p>}
+              {isEditingInfo ? (
+                <div className="flex gap-2 pt-2 justify-end">
                   <Button size="sm" className="gap-1" onClick={handleSave} disabled={saving}>
                     <Save className="h-3.5 w-3.5" /> {saving ? "저장 중..." : "저장"}
                   </Button>
@@ -616,13 +655,13 @@ const ManageContent: React.FC = () => {
                     <X className="h-3.5 w-3.5" /> 취소
                   </Button>
                 </div>
+              ) : (
+                <div className="pt-2 border-t border-border flex justify-end">
+                  <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting}>
+                    {deleting ? "삭제 중..." : "콘텐츠 삭제"}
+                  </Button>
+                </div>
               )}
-              {saveError && <p className="text-sm text-destructive">{saveError}</p>}
-              <div className="pt-2 border-t border-border flex justify-end">
-                <Button size="sm" variant="destructive" onClick={handleDelete} disabled={deleting}>
-                  {deleting ? "삭제 중..." : "콘텐츠 삭제"}
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
