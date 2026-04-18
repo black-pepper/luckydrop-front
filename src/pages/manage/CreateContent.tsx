@@ -32,9 +32,8 @@ interface RewardRow {
 interface CodeRow { id: number; code: string; name: string; allowedDrawCount: number }
 
 const initialRewards: RewardRow[] = [
-  { id: 1, name: "스타벅스 쿠폰", weight: 10, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: false, active: true },
-  { id: 2, name: "비타500", weight: 25, stock: 54, imageUrl: "", unlimited: false, allowDuplicateReward: false, active: true },
-  { id: 3, name: "꽝", weight: 60, stock: 999, imageUrl: "", unlimited: true, allowDuplicateReward: false, active: true },
+  { id: 1, name: "교환권", weight: 10, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: true, active: true },
+  { id: 2, name: "꽝", weight: 60, stock: null, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true },
 ];
 
 const initialCodes: CodeRow[] = [];
@@ -54,7 +53,7 @@ const CreateContent: React.FC = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const addReward = () =>
-    setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, stock: 10, imageUrl: "", unlimited: true, allowDuplicateReward: false, active: true }]);
+    setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, stock: 10, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true }]);
   const removeReward = (id: number) => setRewards((r) => r.filter((x) => x.id !== id));
   const updateReward = (id: number, field: keyof RewardRow, value: string | number | boolean) =>
     setRewards((r) => r.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
@@ -224,7 +223,7 @@ const CreateContent: React.FC = () => {
                     <div className="space-y-1.5">
                       <Label className="text-sm pl-1">보상 이름</Label>
                       <Input
-                        placeholder="예: 스타벅스 쿠폰"
+                        placeholder="예: 000 교환권"
                         value={r.name}
                         onChange={(e) => updateReward(r.id, "name", e.target.value)}
                       />
@@ -292,7 +291,10 @@ const CreateContent: React.FC = () => {
                           checked={r.allowDuplicateReward}
                           onCheckedChange={(checked) => updateReward(r.id, "allowDuplicateReward", !!checked)}
                         />
-                        <Label htmlFor={`duplicate-${r.id}`} className="text-sm cursor-pointer">중복 당첨 허용</Label>
+                        <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                          <Label htmlFor={`duplicate-${r.id}`} className="text-sm cursor-pointer shrink-0">중복 당첨 허용</Label>
+                          <span className="text-xs text-muted-foreground">동일 사용자가 이 보상을 여러 번 당첨받을 수 있습니다.</span>
+                        </div>
                       </div>
                       <Button size="icon" variant="ghost" onClick={() => removeReward(r.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />

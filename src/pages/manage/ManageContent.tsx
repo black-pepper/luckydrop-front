@@ -62,7 +62,7 @@ interface RewardFormState {
 
 const emptyForm = (): RewardFormState => ({
   name: "", description: "", weight: 10, stock: 10,
-  unlimited: true, imageUrl: "", allowDuplicateReward: false, active: true,
+  unlimited: true, imageUrl: "", allowDuplicateReward: true, active: true,
 });
 
 const fromApiReward = (r: ManageRewardResponse): RewardFormState => ({
@@ -102,7 +102,7 @@ const RewardFormCard: React.FC<{
       </div>
       <div className="space-y-1.5">
         <Label className="text-sm pl-1">보상 이름</Label>
-        <Input placeholder="예: 스타벅스 쿠폰" value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} />
+        <Input placeholder="예: 교환권" value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} />
       </div>
       <div className="space-y-1.5">
         <Label className="text-sm pl-1">설명</Label>
@@ -165,7 +165,10 @@ const RewardFormCard: React.FC<{
             checked={form.allowDuplicateReward}
             onCheckedChange={(checked) => onChange({ ...form, allowDuplicateReward: !!checked })}
           />
-          <Label htmlFor={`dup-${formId}`} className="text-sm cursor-pointer">중복 당첨 허용</Label>
+          <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+            <Label htmlFor={`dup-${formId}`} className="text-sm cursor-pointer shrink-0">중복 당첨 허용</Label>
+            <span className="text-xs text-muted-foreground">동일 사용자가 이 보상을 여러 번 당첨받을 수 있습니다.</span>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button size="sm" className="gap-1" onClick={onSave} disabled={saving}>

@@ -13,17 +13,17 @@ interface ResultCardProps {
 
 // 보상 이름 기반으로 이모지와 등급 추정 (API에 grade/emoji 없으므로 fallback)
 const guessEmoji = (name: string): string => {
-  if (name.includes("스타벅스") || name.includes("커피")) return "☕";
+  if (name.includes("커피") || name.includes("아메리카노")) return "☕";
   if (name.includes("치킨")) return "🍗";
-  if (name.includes("상품권")) return "🎁";
-  if (name.includes("비타")) return "🥤";
-  if (name.includes("스페셜") || name.includes("에어팟")) return "✨";
+  if (name.includes("상품권") || name.includes("교환권")) return "🎁";
+  if (name.includes("카페") || name.includes("음료")) return "🥤";
+  if (name.includes("스페셜")) return "✨";
   if (name.includes("꽝")) return "💨";
   return "🎉";
 };
 
 const guessGrade = (name: string): "special" | "normal" | "consolation" => {
-  if (name.includes("스페셜") || name.includes("에어팟")) return "special";
+  if (name.includes("스페셜")) return "special";
   if (name.includes("꽝") || name.includes("감사")) return "consolation";
   return "normal";
 };
