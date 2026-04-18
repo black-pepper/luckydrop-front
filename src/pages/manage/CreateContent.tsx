@@ -324,7 +324,12 @@ const CreateContent: React.FC = () => {
                           className="font-mono text-sm"
                           placeholder="예: ABC123"
                           value={c.code}
-                          onChange={(e) => updateCode(c.id, "code", e.target.value)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // 대문자, 소문자, 숫자, 하이픈(-), 언더스코어(_)만 허용
+                            const filteredValue = value.replace(/[^A-Za-z0-9-_]/g, "");
+                            updateCode(c.id, "code", filteredValue);
+                          }}
                         />
                       </div>
                       <div className="space-y-1.5">

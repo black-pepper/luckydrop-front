@@ -36,7 +36,10 @@ const CodeInputCard = ({ onSubmit, error, loading }: CodeInputCardProps) => {
             type="text"
             value={code}
             onChange={(e) => {
-              setCode(e.target.value.toUpperCase());
+              const value = e.target.value;
+              // 대문자, 소문자, 숫자, 하이픈(-), 언더스코어(_)만 허용
+              const filteredValue = value.replace(/[^A-Za-z0-9-_]/g, "");
+              setCode(filteredValue);
             }}
             placeholder="참여 코드 입력"
             maxLength={10}

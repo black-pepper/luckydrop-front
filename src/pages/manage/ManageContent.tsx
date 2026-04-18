@@ -209,7 +209,17 @@ const InvitationCodeFormCard: React.FC<{
       {!isEdit && (
         <div className="space-y-1.5">
           <Label className="text-sm">코드</Label>
-          <Input className="font-mono" placeholder="예: LUCKY-001" value={form.code} onChange={(e) => onChange({ ...form, code: e.target.value })} />
+          <Input 
+            className="font-mono" 
+            placeholder="예: LUCKY-001" 
+            value={form.code} 
+            onChange={(e) => {
+              const value = e.target.value;
+              // 대문자, 소문자, 숫자, 하이픈(-), 언더스코어(_)만 허용
+              const filteredValue = value.replace(/[^A-Za-z0-9-_]/g, "");
+              onChange({ ...form, code: filteredValue });
+            }} 
+          />
         </div>
       )}
       <div className="grid grid-cols-2 gap-3">
