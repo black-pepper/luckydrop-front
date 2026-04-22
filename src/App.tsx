@@ -10,6 +10,7 @@ import ManageLogin from "./pages/manage/ManageLogin";
 import ManageDashboard from "./pages/manage/ManageDashboard";
 import CreateContent from "./pages/manage/CreateContent";
 import ManageContent from "./pages/manage/ManageContent";
+import ManageSettings from "./pages/manage/ManageSettings";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/manage/login" element={<ManageLogin />} />
           <Route path="/manage" element={<ManageDashboard />} />
           <Route path="/manage/create" element={<CreateContent />} />
+          <Route path="/manage/settings" element={<ManageSettings />} />
           <Route path="/manage/:contentCode" element={<ManageContent />} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

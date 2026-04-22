@@ -107,6 +107,12 @@ export interface ManageContentDeleteResponse {
 // GET /user
 export interface UserInfo {
   name: string;
+  createdAt?: string; // ISO date-time
+}
+
+// PUT /user
+export interface UserRequest {
+  name: string;
 }
 
 // Manage reward types

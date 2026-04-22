@@ -170,6 +170,20 @@ export async function getCurrentUser(): Promise<UserInfo> {
   return authRequest<UserInfo>("/user");
 }
 
+export async function updateCurrentUser(payload: UserRequest): Promise<UserInfo> {
+  // Spec says parameters are in query: ?request.name=...
+  const params = new URLSearchParams({ name: payload.name });
+  return authRequest<UserInfo>(`/user?${params.toString()}`, {
+    method: "PUT",
+  });
+}
+
+export async function withdrawUser(): Promise<void> {
+  return authRequest<void>("/user", {
+    method: "DELETE",
+  });
+}
+
 // ── Manage Reward API ──────────────────────────────────────────────────────
 
 export async function getManageRewardsByContent(contentCode: string): Promise<ManageRewardResponse[]> {
