@@ -67,7 +67,7 @@ const HeroSection = () => {
       <h1 className="text-3xl md:text-5xl font-extrabold text-foreground leading-tight mb-4">
         이벤트를 만들고,<br />코드 하나로 참여하세요
       </h1>
-      <p className="text-muted-foreground text-base md:text-lg max-w-md mx-auto mb-8">
+      <p className="text-muted-foreground text-base md:text-lg max-w-md md:max-w-2xl mx-auto mb-8">
         룰렛 이벤트를 손쉽게 만들고, 참여 코드 하나로 공유할 수 있어요.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -105,7 +105,6 @@ const RoleEntrySection = () => {
                 </li>
               ))}
             </ul>
-            <Button className="mt-2 w-full" onClick={() => navigate("/manage/login")}>콘텐츠 만들기</Button>
           </CardContent>
         </Card>
 
@@ -124,10 +123,6 @@ const RoleEntrySection = () => {
                 </li>
               ))}
             </ul>
-            <div className="mt-2 rounded-lg bg-background/70 border border-border px-3 py-2 text-xs text-muted-foreground flex items-start gap-2">
-              <KeyRound size={14} className="shrink-0 mt-0.5 text-primary" />
-              <span>주최자가 공유한 참여 링크로 바로 입장하세요. 별도 가입은 필요 없어요.</span>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -145,13 +140,13 @@ const FeaturesSection = () => {
       iconBg: "bg-[hsl(var(--peach)/0.35)]",
       comingSoon: false,
     },
-    {
-      icon: <MessageCircle size={28} className="text-secondary-foreground" />,
-      title: "익명 메시지함",
-      desc: "이름 없이 마음을 전할 수 있는 따뜻한 메시지 공간이에요.",
-      iconBg: "bg-[hsl(var(--lavender)/0.35)]",
-      comingSoon: true,
-    },
+    // {
+    //   icon: <MessageCircle size={28} className="text-secondary-foreground" />,
+    //   title: "익명 메시지함",
+    //   desc: "이름 없이 마음을 전할 수 있는 따뜻한 메시지 공간이에요.",
+    //   iconBg: "bg-[hsl(var(--lavender)/0.35)]",
+    //   comingSoon: true,
+    // },
     {
       icon: <KeyRound size={28} className="text-accent-foreground" />,
       title: "코드 기반 참여",
@@ -165,11 +160,11 @@ const FeaturesSection = () => {
     <section id="features" className="px-4 py-12 md:py-16 bg-muted/40">
       <div className="max-w-4xl mx-auto">
         <h2 className="text-xl md:text-2xl font-extrabold text-center text-foreground mb-8">어떤 것들을 할 수 있나요?</h2>
-        <div className="grid md:grid-cols-3 gap-5">
+        <div className="flex flex-wrap justify-center gap-5">
           {features.map((f) => (
             <Card
               key={f.title}
-              className={`relative border border-border transition-shadow ${f.comingSoon ? "opacity-60" : "hover:shadow-md"}`}
+              className={`relative border border-border transition-shadow w-full sm:w-[calc(50%-1.25rem)] md:w-[calc(33.333%-1.25rem)] max-w-[320px] ${f.comingSoon ? "opacity-60" : "hover:shadow-md"}`}
             >
               {f.comingSoon && (
                 <span className="absolute top-3 right-3 text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
@@ -238,24 +233,27 @@ const BottomCTA = () => {
 };
 
 /* ───────── Footer ───────── */
-const LandingFooter = () => (
-  <footer className="border-t border-border py-10 px-4 text-sm text-muted-foreground">
-    <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-      <div className="text-center md:text-left">
-        <p className="font-bold text-foreground mb-1">🎉 LuckyDrop</p>
-        <p className="mb-1">참여형 이벤트 콘텐츠 플랫폼</p>
-        <p className="text-xs">© 2026 LuckyDrop. All rights reserved.</p>
+const LandingFooter = () => {
+  const navigate = useNavigate();
+  return (
+    <footer className="border-t border-border py-10 px-4 text-sm text-muted-foreground">
+      <div className="max-w-5xl mx-auto flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+        <div className="text-center md:text-left">
+          <p className="font-bold text-foreground mb-1">🎉 LuckyDrop</p>
+          <p className="mb-1">참여형 이벤트 콘텐츠 플랫폼</p>
+          <p className="text-xs">© 2026 LuckyDrop. All rights reserved.</p>
+        </div>
+        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
+          <a href="#features" className="hover:text-foreground transition-colors">소개</a>
+          <a href="#host-flow" className="hover:text-foreground transition-colors">이용 흐름</a>
+          <button onClick={() => navigate("/policy")} className="hover:text-foreground transition-colors">이용약관</button>
+          <button onClick={() => navigate("/policy")} className="hover:text-foreground transition-colors">개인정보처리방침</button>
+          <a href="#" className="hover:text-foreground transition-colors">문의</a>
+        </nav>
       </div>
-      <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs">
-        <a href="#features" className="hover:text-foreground transition-colors">소개</a>
-        <a href="#host-flow" className="hover:text-foreground transition-colors">이용 흐름</a>
-        <a href="#" className="hover:text-foreground transition-colors">이용약관</a>
-        <a href="#" className="hover:text-foreground transition-colors">개인정보처리방침</a>
-        <a href="#" className="hover:text-foreground transition-colors">문의</a>
-      </nav>
-    </div>
-  </footer>
-);
+    </footer>
+  );
+};
 
 /* ───────── Landing Page ───────── */
 const Landing = () => (

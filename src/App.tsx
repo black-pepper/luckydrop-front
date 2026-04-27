@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import Policy from "./pages/Policy";
 import ManageLogin from "./pages/manage/ManageLogin";
 import ManageDashboard from "./pages/manage/ManageDashboard";
 import CreateContent from "./pages/manage/CreateContent";
@@ -23,6 +24,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/draw/:contentCode" element={<Index />} />
+          <Route path="/policy" element={<Policy />} />
 
           {/* Manage routes */}
           <Route path="/manage/login" element={<ManageLogin />} />
