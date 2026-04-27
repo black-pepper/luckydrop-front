@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import Footer from "@/components/Footer";
 
 type Section = { title: string; body: string };
+// ... (termsSections, privacySections unchanged)
 
 const termsSections: Section[] = [
   {
@@ -66,13 +69,29 @@ const privacySections: Section[] = [
 ];
 
 const Policy = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState<"terms" | "privacy">("terms");
+
+  // URL 파라미터가 변경되면 탭 상태 업데이트
+  useEffect(() => {
+    if (tabParam === "privacy" || tabParam === "terms") {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  // 탭이 변경되면 URL 파라미터 업데이트
+  const handleTabChange = (value: string) => {
+    const nextTab = value as "terms" | "privacy";
+    setActiveTab(nextTab);
+    setSearchParams({ tab: nextTab });
+  };
 
   const title = activeTab === "terms" ? "이용약관" : "개인정보처리방침";
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto w-full max-w-[720px] px-4 py-10 md:py-16">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex-1 mx-auto w-full max-w-[720px] px-4 py-10 md:py-16">
         <header className="mb-8 space-y-2">
           <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
             {title}
@@ -87,7 +106,7 @@ const Policy = () => {
 
         <Tabs
           value={activeTab}
-          onValueChange={(v) => setActiveTab(v as "terms" | "privacy")}
+          onValueChange={handleTabChange}
           className="w-full"
         >
           <TabsList className="grid w-full grid-cols-2">
@@ -125,18 +144,8 @@ const Policy = () => {
             </article>
           </TabsContent>
         </Tabs>
-
-        <footer className="mt-16 border-t pt-6 text-center text-sm text-muted-foreground">
-          궁금한 점이 있으신가요?{" "}
-          <a
-            href="#"
-            className="font-medium text-primary hover:underline"
-            onClick={(e) => e.preventDefault()}
-          >
-            문의하기
-          </a>
-        </footer>
       </div>
+      <Footer />
     </div>
   );
 };
