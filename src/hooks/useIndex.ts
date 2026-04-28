@@ -54,7 +54,7 @@ export function useIndex(contentCode: string) {
     [contentCode, invitationCode],
   );
 
-  const handleCodeSubmit = async (inputCode: string) => {
+  async function handleCodeSubmit(inputCode: string) {
     setError(null);
     if (!contentCode) {
       setError("콘텐츠 정보가 없습니다. 올바른 참여 링크로 접속해 주세요.");
@@ -73,7 +73,7 @@ export function useIndex(contentCode: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleStartDraw = () => {
     if (!canDraw || remaining <= 0) return;

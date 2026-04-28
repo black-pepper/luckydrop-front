@@ -265,6 +265,7 @@ const ManageContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedCodeId, setCopiedCodeId] = useState<number | null>(null);
 
   // Edit content state
   const [isEditingInfo, setIsEditingInfo] = useState(false);
@@ -368,6 +369,13 @@ const ManageContent: React.FC = () => {
     navigator.clipboard.writeText(shareLink).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleCopyCodeLink = (invitationCode: string, id: number) => {
+    const link = `${window.location.origin}/draw/${contentCode}?code=${invitationCode}`;
+    navigator.clipboard.writeText(link).catch(() => {});
+    setCopiedCodeId(id);
+    setTimeout(() => setCopiedCodeId(null), 1500);
   };
 
   const handleSave = async () => {
@@ -829,6 +837,9 @@ const ManageContent: React.FC = () => {
                             </td>
                             <td className="px-3 py-2">
                               <div className="flex gap-1 justify-end">
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleCopyCodeLink(c.code, c.id)}>
+                                  {copiedCodeId === c.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
+                                </Button>
                                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingCodeId(c.id); setEditCodeForm(fromApiCode(c)); setEditCodeError(null); }}>
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>

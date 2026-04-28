@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import CodeInputCard from "@/components/draw/CodeInputCard";
 import UserInfoCard from "@/components/draw/UserInfoCard";
 import DrawBox from "@/components/draw/DrawBox";
@@ -8,6 +8,8 @@ import { useIndex } from "@/hooks/useIndex";
 
 const Index = () => {
   const { contentCode = "" } = useParams<{ contentCode: string }>();
+  const [searchParams] = useSearchParams();
+  const initialCode = searchParams.get("code") ?? "";
   const {
     state,
     error,
@@ -51,6 +53,7 @@ const Index = () => {
             description={contentDescription}
             startAt={contentStartAt}
             endAt={contentEndAt}
+            initialValue={initialCode}
           />
         )}
         {state === "user" && (

@@ -9,6 +9,7 @@ interface CodeInputCardProps {
   description?: string | null;
   startAt?: string | null;
   endAt?: string | null;
+  initialValue?: string;
 }
 
 function formatDateTime(iso: string): string {
@@ -21,8 +22,8 @@ function formatDateTime(iso: string): string {
   return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
 }
 
-const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, endAt }: CodeInputCardProps) => {
-  const [code, setCode] = useState("");
+const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, endAt, initialValue = "" }: CodeInputCardProps) => {
+  const [code, setCode] = useState(initialValue);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
