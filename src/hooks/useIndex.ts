@@ -15,7 +15,7 @@ function checkExpired(startAt: string | null, endAt: string | null): boolean {
 export function useIndex(contentCode: string) {
   const [state, setState] = useState<AppState>("code");
   const [invitationCode, setInvitationCode] = useState("");
-  const [maskedName, setMaskedName] = useState("");
+  const [userName, setUserName] = useState("");
   const [remaining, setRemaining] = useState(0);
   const [canDraw, setCanDraw] = useState(false);
   const [drawStatus, setDrawStatus] = useState<DrawStatus | null>(null);
@@ -65,7 +65,7 @@ export function useIndex(contentCode: string) {
     try {
       const data = await verifyCode(getDrawParams(inputCode));
       setInvitationCode(inputCode);
-      setMaskedName(data.name ?? "사용자");
+      setUserName(data.name ?? "사용자");
       setRemaining(data.remainingCount ?? 0);
       setCanDraw(data.canDraw ?? false);
       setDrawStatus(data.drawStatus);
@@ -101,7 +101,7 @@ export function useIndex(contentCode: string) {
   const handleReset = () => {
     setState("code");
     setInvitationCode("");
-    setMaskedName("");
+    setUserName("");
     setError(null);
     setDrawResult(null);
     setRemaining(0);
@@ -134,7 +134,7 @@ export function useIndex(contentCode: string) {
     error,
     loading,
     invitationCode,
-    maskedName,
+    userName,
     remaining,
     canDraw,
     drawStatus,

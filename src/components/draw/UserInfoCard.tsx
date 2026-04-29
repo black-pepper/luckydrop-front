@@ -5,7 +5,7 @@ import type { DrawStatus } from "@/api/types";
 interface UserInfoCardProps {
   contentCode: string;
   invitationCode: string;
-  maskedName: string;
+  userName: string;
   remainingDraws: number;
   hasHistory: boolean;
   isExpired?: boolean;
@@ -18,7 +18,7 @@ interface UserInfoCardProps {
 const UserInfoCard = ({
   contentCode,
   invitationCode,
-  maskedName,
+  userName,
   remainingDraws,
   hasHistory,
   isExpired = false,
@@ -91,7 +91,7 @@ const UserInfoCard = ({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">환영합니다!</p>
-            <p className="text-xl font-extrabold text-card-foreground">{maskedName} 님</p>
+            <p className="text-xl font-extrabold text-card-foreground">{userName} 님</p>
           </div>
         </div>
 

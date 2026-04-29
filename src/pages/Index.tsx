@@ -15,7 +15,7 @@ const Index = () => {
     error,
     loading,
     invitationCode,
-    maskedName,
+    userName,
     remaining,
     drawStatus,
     isExpired,
@@ -61,7 +61,7 @@ const Index = () => {
           <UserInfoCard
             contentCode={contentCode}
             invitationCode={invitationCode}
-            maskedName={maskedName}
+            userName={userName}
             remainingDraws={remaining}
             hasHistory={true}
             isExpired={isExpired}
