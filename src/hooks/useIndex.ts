@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { verifyCode, executeDraw, getResults, getParticipantContentDetail } from "@/api/client";
-import type { DrawParticipantParams, DrawResponse, DrawResultResponse } from "@/api/types";
+import type { DrawParticipantParams, DrawResponse, DrawResultResponse, DrawStatus } from "@/api/types";
 
 type AppState = "code" | "user" | "drawing" | "result" | "history";
 type HistoryReturnState = "user" | "result";
@@ -18,6 +18,7 @@ export function useIndex(contentCode: string) {
   const [maskedName, setMaskedName] = useState("");
   const [remaining, setRemaining] = useState(0);
   const [canDraw, setCanDraw] = useState(false);
+  const [drawStatus, setDrawStatus] = useState<DrawStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -64,9 +65,10 @@ export function useIndex(contentCode: string) {
     try {
       const data = await verifyCode(getDrawParams(inputCode));
       setInvitationCode(inputCode);
-      setMaskedName(data.maskedName ?? "사용자");
+      setMaskedName(data.name ?? "사용자");
       setRemaining(data.remainingCount ?? 0);
       setCanDraw(data.canDraw ?? false);
+      setDrawStatus(data.drawStatus);
       setState("user");
     } catch (e: any) {
       setError(e.message ?? "사용할 수 없는 코드예요. 코드를 다시 확인해 주세요 🙏");
@@ -104,6 +106,7 @@ export function useIndex(contentCode: string) {
     setDrawResult(null);
     setRemaining(0);
     setCanDraw(false);
+    setDrawStatus(null);
     setHistory([]);
     setHistoryReturnState("user");
   };
@@ -134,6 +137,7 @@ export function useIndex(contentCode: string) {
     maskedName,
     remaining,
     canDraw,
+    drawStatus,
     contentTitle,
     contentDescription,
     contentStartAt,

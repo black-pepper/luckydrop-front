@@ -11,10 +11,18 @@ export interface DrawParticipantParams {
 }
 
 // GET /api/draw/verify?contentCode=&invitationCode=
+export type DrawStatus =
+  | "DRAWABLE"
+  | "NO_REMAINING"
+  | "CONTENT_NOT_STARTED"
+  | "CONTENT_EXPIRED"
+  | "NO_AVAILABLE_REWARD";
+
 export interface CodeVerifyResponse {
-  maskedName: string;
+  name: string;
   remainingCount: number;
   canDraw: boolean;
+  drawStatus: DrawStatus;
 }
 
 // POST /api/draw/execute

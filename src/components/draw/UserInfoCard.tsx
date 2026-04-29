@@ -1,5 +1,6 @@
 import { User, RefreshCw, ClipboardList } from "lucide-react";
 import RewardListCard from "./RewardListCard";
+import type { DrawStatus } from "@/api/types";
 
 interface UserInfoCardProps {
   contentCode: string;
@@ -8,6 +9,7 @@ interface UserInfoCardProps {
   remainingDraws: number;
   hasHistory: boolean;
   isExpired?: boolean;
+  drawStatus: DrawStatus | null;
   onDraw: () => void;
   onBack: () => void;
   onViewHistory: () => void;
@@ -20,11 +22,65 @@ const UserInfoCard = ({
   remainingDraws,
   hasHistory,
   isExpired = false,
+  drawStatus,
   onDraw,
   onBack,
   onViewHistory,
 }: UserInfoCardProps) => {
-  const noDrawsLeft = remainingDraws <= 0;
+  const renderDrawButton = () => {
+    if (isExpired || drawStatus === "CONTENT_EXPIRED") {
+      return (
+        <button
+          disabled
+          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-lg opacity-60 cursor-not-allowed"
+        >
+          종료되었습니다.
+        </button>
+      );
+    }
+
+    if (drawStatus === "CONTENT_NOT_STARTED") {
+      return (
+        <button
+          disabled
+          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-lg opacity-60 cursor-not-allowed"
+        >
+          아직 시작되지 않았습니다
+        </button>
+      );
+    }
+
+    if (drawStatus === "NO_REMAINING" || remainingDraws <= 0) {
+      return (
+        <button
+          disabled
+          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-base opacity-60 cursor-not-allowed"
+        >
+          기회가 모두 소진되었습니다
+        </button>
+      );
+    }
+
+    if (drawStatus === "NO_AVAILABLE_REWARD") {
+      return (
+        <button
+          disabled
+          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-base opacity-60 cursor-not-allowed"
+        >
+          남은 상품이 없습니다
+        </button>
+      );
+    }
+
+    return (
+      <button
+        onClick={onDraw}
+        className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-lg shadow-[var(--shadow-soft)] hover:brightness-105 active:scale-[0.98] transition-all"
+      >
+        🎰 뽑기 시작!
+      </button>
+    );
+  };
 
   return (
     <div className="animate-bounce-in flex flex-col items-center gap-5 w-full max-w-sm mx-auto">
@@ -47,28 +103,7 @@ const UserInfoCard = ({
           </span>
         </div>
 
-        {isExpired ? (
-          <button
-            disabled
-            className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-lg opacity-60 cursor-not-allowed"
-          >
-            종료되었습니다.
-          </button>
-        ) : noDrawsLeft ? (
-          <button
-            disabled
-            className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-base opacity-60 cursor-not-allowed"
-          >
-            기회가 모두 소진되었습니다
-          </button>
-        ) : (
-          <button
-            onClick={onDraw}
-            className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-lg shadow-[var(--shadow-soft)] hover:brightness-105 active:scale-[0.98] transition-all"
-          >
-            🎰 뽑기 시작!
-          </button>
-        )}
+        {renderDrawButton()}
 
         {hasHistory && (
           <button

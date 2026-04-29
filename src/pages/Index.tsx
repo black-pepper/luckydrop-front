@@ -17,6 +17,7 @@ const Index = () => {
     invitationCode,
     maskedName,
     remaining,
+    drawStatus,
     isExpired,
     contentTitle,
     contentDescription,
@@ -64,6 +65,7 @@ const Index = () => {
             remainingDraws={remaining}
             hasHistory={true}
             isExpired={isExpired}
+            drawStatus={drawStatus}
             onDraw={handleStartDraw}
             onBack={handleReset}
             onViewHistory={handleViewHistory}
