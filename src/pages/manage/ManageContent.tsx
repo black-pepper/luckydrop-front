@@ -789,7 +789,7 @@ const ManageContent: React.FC = () => {
               )}
               {!inviteCodesLoading && !inviteCodesError && (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full min-w-[600px] text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
                         <th className="px-5 py-2">코드</th>
@@ -871,7 +871,7 @@ const ManageContent: React.FC = () => {
               )}
               {!drawResultsLoading && !drawResultsError && (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full min-w-[600px] text-sm">
                     <thead>
                       <tr className="border-b text-left text-muted-foreground">
                         <th className="px-5 py-2">코드</th>
