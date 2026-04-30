@@ -128,8 +128,6 @@ const ManageLogin: React.FC = () => {
           <h1 className="text-2xl font-bold text-foreground">LuckyDrop</h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
             이벤트를 만들고 공유해보세요.<br />
-            뽑기, 퀴즈, 메시지함 등 다양한<br />
-            참여형 콘텐츠를 손쉽게 관리하세요.
           </p>
 
           <Button

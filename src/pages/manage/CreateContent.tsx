@@ -41,7 +41,7 @@ const initialCodes: CodeRow[] = [];
 const CreateContent: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [contentType, setContentType] = useState<ContentType | null>(null);
+  const [contentType, setContentType] = useState<ContentType | null>("draw");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
@@ -74,7 +74,7 @@ const CreateContent: React.FC = () => {
 
   const canNext = () => {
     if (step === 1) return !!contentType;
-    if (step === 2) return title.trim().length > 0 && description.trim().length > 0;
+    if (step === 2) return title.trim().length > 0;
     if (step === 4) return codes.every((c) => c.code.trim().length > 0 && c.name.trim().length > 0);
     return true;
   };
@@ -141,18 +141,17 @@ const CreateContent: React.FC = () => {
 
       {/* Step 1: Type */}
       {step === 1 && (
-        <div className="grid gap-3 sm:grid-cols-3">
-          {typeOptions.map((opt) => (
+        <div className="flex flex-wrap gap-3 justify-center">
+          {typeOptions.filter((opt) => !opt.disabled).map((opt) => (
             <Card
               key={opt.value}
-              className={`transition-shadow ${opt.disabled ? "opacity-50 cursor-not-allowed bg-muted/50" : "cursor-pointer hover:shadow-md"} ${contentType === opt.value ? "ring-2 ring-primary" : ""}`}
-              onClick={() => !opt.disabled && setContentType(opt.value)}
+              className={`w-64 transition-shadow cursor-pointer hover:shadow-md ${contentType === opt.value ? "ring-2 ring-primary" : ""}`}
+              onClick={() => setContentType(opt.value)}
             >
               <CardContent className="flex flex-col items-center gap-2 p-6 text-center">
-                <div className={`${opt.disabled ? "text-muted-foreground" : "text-primary"}`}>{opt.icon}</div>
+                <div className="text-primary">{opt.icon}</div>
                 <h3 className="font-semibold text-foreground">{opt.label}</h3>
                 <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                {opt.disabled && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground mt-1">Coming Soon</span>}
               </CardContent>
             </Card>
           ))}
@@ -169,7 +168,7 @@ const CreateContent: React.FC = () => {
               <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="이벤트 제목을 입력하세요" />
             </div>
             <div className="space-y-1.5">
-              <Label>설명 <span className="text-destructive">*</span></Label>
+              <Label>설명 <span className="text-muted-foreground text-xs">(선택)</span></Label>
               <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="간단한 설명을 입력하세요" />
             </div>
             <div className="grid grid-cols-2 gap-3">
