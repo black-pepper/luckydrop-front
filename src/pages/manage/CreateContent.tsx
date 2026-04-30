@@ -180,7 +180,7 @@ const CreateContent: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between hidden">
               <Label>공개 여부</Label>
               <Switch checked={isPublic} onCheckedChange={setIsPublic} />
             </div>
