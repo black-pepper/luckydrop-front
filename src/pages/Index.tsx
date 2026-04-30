@@ -1,4 +1,4 @@
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import CodeInputCard from "@/components/draw/CodeInputCard";
 import UserInfoCard from "@/components/draw/UserInfoCard";
 import DrawBox from "@/components/draw/DrawBox";
@@ -9,6 +9,7 @@ import { useIndex } from "@/hooks/useIndex";
 const Index = () => {
   const { contentCode = "" } = useParams<{ contentCode: string }>();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialCode = searchParams.get("code") ?? "";
   const {
     state,
@@ -36,7 +37,7 @@ const Index = () => {
   } = useIndex(contentCode);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+    <div className="min-h-screen flex flex-col px-4">
       {/* Decorative background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-10 left-10 w-32 h-32 rounded-full bg-peach/20 blur-3xl" />
@@ -44,57 +45,68 @@ const Index = () => {
         <div className="absolute top-1/2 left-1/3 w-24 h-24 rounded-full bg-mint/20 blur-3xl" />
       </div>
 
-      <div className="w-full max-w-sm">
-        {state === "code" && (
-          <CodeInputCard
-            onSubmit={handleCodeSubmit}
-            error={error}
-            loading={loading}
-            title={contentTitle}
-            description={contentDescription}
-            startAt={contentStartAt}
-            endAt={contentEndAt}
-            initialValue={initialCode}
-          />
-        )}
-        {state === "user" && (
-          <UserInfoCard
-            contentCode={contentCode}
-            invitationCode={invitationCode}
-            userName={userName}
-            remainingDraws={remaining}
-            hasHistory={true}
-            isExpired={isExpired}
-            drawStatus={drawStatus}
-            onDraw={handleStartDraw}
-            onBack={handleReset}
-            onViewHistory={handleViewHistory}
-          />
-        )}
-        {state === "drawing" && (
-          <DrawBox onComplete={handleDrawComplete} />
-        )}
-        {state === "result" && drawResult && (
-          <ResultCard
-            rewardName={drawResult.rewardName ?? "알 수 없는 보상"}
-            rewardImageUrl={drawResult.rewardImageUrl}
-            drawNo={drawResult.drawNo ?? 0}
-            remainingDraws={remaining}
-            onDrawAgain={handleDrawAgain}
-            onFinish={handleReset}
-            onViewHistory={handleViewHistory}
-            onReset={handleReset}
-          />
-        )}
-        {state === "history" && (
-          <ResultHistoryList
-            results={history}
-            loading={historyLoading}
-            onBack={handleHistoryBack}
-            onReset={handleReset}
-          />
-        )}
+      <div className="flex-1 flex items-center justify-center py-8">
+        <div className="w-full max-w-sm">
+          {state === "code" && (
+            <CodeInputCard
+              onSubmit={handleCodeSubmit}
+              error={error}
+              loading={loading}
+              title={contentTitle}
+              description={contentDescription}
+              startAt={contentStartAt}
+              endAt={contentEndAt}
+              initialValue={initialCode}
+            />
+          )}
+          {state === "user" && (
+            <UserInfoCard
+              contentCode={contentCode}
+              invitationCode={invitationCode}
+              userName={userName}
+              remainingDraws={remaining}
+              hasHistory={true}
+              isExpired={isExpired}
+              drawStatus={drawStatus}
+              onDraw={handleStartDraw}
+              onBack={handleReset}
+              onViewHistory={handleViewHistory}
+            />
+          )}
+          {state === "drawing" && (
+            <DrawBox onComplete={handleDrawComplete} />
+          )}
+          {state === "result" && drawResult && (
+            <ResultCard
+              rewardName={drawResult.rewardName ?? "알 수 없는 보상"}
+              rewardImageUrl={drawResult.rewardImageUrl}
+              drawNo={drawResult.drawNo ?? 0}
+              remainingDraws={remaining}
+              onDrawAgain={handleDrawAgain}
+              onFinish={handleReset}
+              onViewHistory={handleViewHistory}
+              onReset={handleReset}
+            />
+          )}
+          {state === "history" && (
+            <ResultHistoryList
+              results={history}
+              loading={historyLoading}
+              onBack={handleHistoryBack}
+              onReset={handleReset}
+            />
+          )}
+        </div>
       </div>
+
+      <footer className="py-4 text-xs text-muted-foreground">
+        <nav className="flex items-center justify-center gap-x-4">
+          <button onClick={() => navigate("/")} className="hover:text-foreground transition-colors">소개</button>
+          <button onClick={() => navigate("/policy?tab=terms")} className="hover:text-foreground transition-colors">이용약관</button>
+          <button onClick={() => navigate("/policy?tab=privacy")} className="hover:text-foreground transition-colors">개인정보처리방침</button>
+          <a href="#" className="hover:text-foreground transition-colors">문의</a>
+        </nav>
+      </footer>
     </div>
   );
 };
