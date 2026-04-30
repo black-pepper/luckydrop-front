@@ -58,19 +58,10 @@ const CreateContent: React.FC = () => {
   const updateReward = (id: number, field: keyof RewardRow, value: string | number | boolean) =>
     setRewards((r) => r.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
 
-  const addCode = () => setCodes((c) => [...c, { id: Date.now(), code: "", name: "", allowedDrawCount: 1 }]);
+  const addCode = () => setCodes((c) => [...c, { id: Date.now(), code: generateCode(), name: "", allowedDrawCount: 1 }]);
   const removeCode = (id: number) => setCodes((c) => c.filter((x) => x.id !== id));
   const updateCode = (id: number, field: keyof CodeRow, value: string | number) =>
     setCodes((c) => c.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
-  const autoGenCodes = () => {
-    const generated = Array.from({ length: 3 }, (_, i) => ({
-      id: Date.now() + i,
-      code: generateCode(),
-      name: "",
-      allowedDrawCount: 1,
-    }));
-    setCodes((c) => [...c, ...generated]);
-  };
 
   const canNext = () => {
     if (step === 1) return !!contentType;
@@ -379,9 +370,6 @@ const CreateContent: React.FC = () => {
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" className="gap-1.5" onClick={addCode}>
                 <Plus className="h-4 w-4" /> 코드 추가
-              </Button>
-              <Button variant="outline" className="gap-1.5" onClick={autoGenCodes}>
-                <Shuffle className="h-4 w-4" /> 코드 자동 생성
               </Button>
             </div>
 
