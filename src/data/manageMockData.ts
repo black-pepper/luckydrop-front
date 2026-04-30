@@ -1,6 +1,7 @@
 // ─── Manage mock data (UI only, no real logic) ───
 
-export type ContentType = "draw" | "quiz" | "messagebox";
+import type { ContentType } from "@/lib/contentTypeConstants";
+export type { ContentType };
 export type ContentStatus = "active" | "ended";
 
 export interface ContentItem {
@@ -31,21 +32,21 @@ export const mockContents: ContentItem[] = [
   {
     id: "1",
     title: "여름 이벤트 뽑기",
-    type: "draw",
+    type: "DRAW",
     status: "active",
     createdAt: "2026-03-10",
   },
   {
     id: "2",
     title: "회사 퀴즈 이벤트",
-    type: "quiz",
+    type: "QUIZ",
     status: "active",
     createdAt: "2026-03-08",
   },
   {
     id: "3",
     title: "익명 메시지함",
-    type: "messagebox",
+    type: "MESSAGEBOX",
     status: "ended",
     createdAt: "2026-02-20",
   },
@@ -64,12 +65,6 @@ export const mockResults: MockDrawResult[] = [
 ];
 
 // ── Helpers ──
-export const contentTypeLabel: Record<ContentType, string> = {
-  draw: "뽑기",
-  quiz: "퀴즈",
-  messagebox: "메시지함",
-};
-
 export const contentStatusLabel: Record<ContentStatus, string> = {
   active: "진행중",
   ended: "종료",

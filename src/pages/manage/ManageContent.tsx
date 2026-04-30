@@ -19,6 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save, CalendarIcon, Search, RotateCcw, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateCode } from "@/lib/utils";
+import { getContentTypeLabel } from "@/lib/contentTypeConstants";
 import {
   getManageContentDetail,
   updateManageContent,
@@ -276,12 +277,6 @@ const InvitationCodeFormCard: React.FC<{
 );
 
 // ── ManageContent ───────────────────────────────────────────────────────────
-
-const typeLabel: Record<string, string> = {
-  draw: "뽑기",
-  quiz: "퀴즈",
-  messagebox: "메시지함",
-};
 
 const ManageContent: React.FC = () => {
   const { contentCode } = useParams<{ contentCode: string }>();
@@ -647,7 +642,7 @@ const ManageContent: React.FC = () => {
           <div>
             <h1 className="text-xl font-bold text-foreground">{content.title}</h1>
             <div className="flex items-center gap-2 mt-0.5">
-              <Badge variant="outline">{typeLabel[content.type] ?? content.type}</Badge>
+              <Badge variant="outline">{getContentTypeLabel(content.type)}</Badge>
               <span className="text-xs text-muted-foreground font-mono">{content.code}</span>
             </div>
           </div>

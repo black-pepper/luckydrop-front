@@ -5,22 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { ManageContentResponse } from "@/api/types";
+import { getContentTypeLabel, getContentTypeColor } from "@/lib/contentTypeConstants";
 
 interface Props {
   item: ManageContentResponse;
 }
-
-const typeColorMap: Record<string, string> = {
-  draw: "bg-manage-accent/10 text-manage-accent border-manage-accent/20",
-  quiz: "bg-secondary/20 text-secondary-foreground",
-  messagebox: "bg-accent/20 text-accent-foreground",
-};
-
-const typeLabel: Record<string, string> = {
-  draw: "뽑기",
-  quiz: "퀴즈",
-  messagebox: "메시지함",
-};
 
 const ContentCard: React.FC<Props> = ({ item }) => (
   <Card className="hover:shadow-md transition-shadow">
@@ -28,8 +17,8 @@ const ContentCard: React.FC<Props> = ({ item }) => (
       <div className="flex-1 min-w-0 space-y-1">
         <h3 className="font-semibold text-foreground truncate">{item.title}</h3>
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <Badge variant="outline" className={typeColorMap[item.type] ?? ""}>
-            {typeLabel[item.type] ?? item.type}
+          <Badge variant="outline" className={getContentTypeColor(item.type)}>
+            {getContentTypeLabel(item.type)}
           </Badge>
           <span className="text-muted-foreground font-mono text-[11px]">{item.code}</span>
           <span className="text-muted-foreground">

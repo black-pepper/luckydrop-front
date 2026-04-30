@@ -7,12 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PlusCircle } from "lucide-react";
 import { getManageContents } from "@/api/client";
 import type { ManageContentResponse } from "@/api/types";
-
-const typeLabel: Record<string, string> = {
-  draw: "뽑기",
-  quiz: "퀴즈",
-  messagebox: "메시지함",
-};
+import { getContentTypeLabel } from "@/lib/contentTypeConstants";
 
 const ManageDashboard: React.FC = () => {
   const [contents, setContents] = useState<ManageContentResponse[]>([]);
@@ -54,7 +49,7 @@ const ManageDashboard: React.FC = () => {
           <SelectContent>
             <SelectItem value="all">전체 타입</SelectItem>
             {knownTypes.map((t) => (
-              <SelectItem key={t} value={t}>{typeLabel[t] ?? t}</SelectItem>
+              <SelectItem key={t} value={t}>{getContentTypeLabel(t)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
