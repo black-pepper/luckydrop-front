@@ -466,7 +466,7 @@ const ManageContent: React.FC = () => {
       const updated = await updateManageContent(contentCode, {
         type: content.type,
         title: editTitle,
-        description: editDescription,
+        description: editDescription || undefined,
         startAt: editStartAt ? new Date(editStartAt).toISOString() : undefined,
         endAt: editEndAt ? new Date(editEndAt).toISOString() : undefined,
       });

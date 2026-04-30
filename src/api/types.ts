@@ -94,7 +94,7 @@ export interface ManageContentDetailResponse {
 export interface ManageContentCreateRequest {
   type: string;
   title: string;
-  description: string;
+  description?: string;
   startAt?: string; // ISO date-time
   endAt?: string;   // ISO date-time
 }
@@ -102,7 +102,7 @@ export interface ManageContentCreateRequest {
 export interface ManageContentUpdateRequest {
   type: string;
   title: string;
-  description: string;
+  description?: string;
   startAt?: string; // ISO date-time
   endAt?: string;   // ISO date-time
 }
