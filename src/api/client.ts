@@ -20,6 +20,8 @@ import type {
   InvitationCodeCreateRequest,
   InvitationCodeUpdateRequest,
   ManageDrawResultResponse,
+  ManageDrawResultsParams,
+  PageResponse,
   DrawResultDeliveryUpdateRequest,
 } from "./types";
 import { supabase } from "@/lib/supabase";
@@ -252,9 +254,20 @@ export async function deleteManageInvitationCode(invitationCodeId: number): Prom
 
 // ── Manage Draw Results API ─────────────────────────────────────────────────
 
-export async function getManageDrawResults(contentCode: string): Promise<ManageDrawResultResponse[]> {
-  return authRequest<ManageDrawResultResponse[]>(
-    `/api/manage/draw-results?contentCode=${encodeURIComponent(contentCode)}`
+export async function getManageDrawResults(
+  params: ManageDrawResultsParams
+): Promise<PageResponse<ManageDrawResultResponse>> {
+  const sp = new URLSearchParams();
+  sp.set("contentCode", params.contentCode);
+  if (params.drawnAtFrom) sp.set("drawnAtFrom", params.drawnAtFrom);
+  if (params.drawnAtTo) sp.set("drawnAtTo", params.drawnAtTo);
+  if (params.delivered !== undefined) sp.set("delivered", String(params.delivered));
+  if (params.invitationCode) sp.set("invitationCode", params.invitationCode);
+  if (params.rewardName) sp.set("rewardName", params.rewardName);
+  sp.set("page", String(params.page ?? 0));
+  sp.set("size", String(params.size ?? 20));
+  return authRequest<PageResponse<ManageDrawResultResponse>>(
+    `/api/manage/draw-results?${sp.toString()}`
   );
 }
 

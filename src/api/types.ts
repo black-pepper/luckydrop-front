@@ -200,7 +200,30 @@ export interface InvitationCodeUpdateRequest {
   active: boolean;
 }
 
-// GET /api/manage/draw-results?contentCode={contentCode}
+// Spring Page 래퍼 (UI에서 사용하는 필드만)
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number; // 0-based current page
+  size: number;
+  first: boolean;
+  last: boolean;
+}
+
+// GET /api/manage/draw-results 쿼리 파라미터
+export interface ManageDrawResultsParams {
+  contentCode: string;
+  drawnAtFrom?: string; // ISO date-time
+  drawnAtTo?: string; // ISO date-time
+  delivered?: boolean;
+  invitationCode?: string; // 정확 일치
+  rewardName?: string; // 부분 일치
+  page?: number; // default 0
+  size?: number; // default 20
+}
+
+// GET /api/manage/draw-results
 export interface ManageDrawResultResponse {
   drawResultId: number;
   invitationCode: string;

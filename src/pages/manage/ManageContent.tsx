@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import ManageLayout from "@/components/manage/ManageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,13 @@ import { Label } from "@/components/ui/label";
 import { StateToggleButton } from "@/components/ui/state-toggle-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save, CalendarIcon, Search, RotateCcw, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { generateCode } from "@/lib/utils";
 import {
   getManageContentDetail,
@@ -27,7 +34,27 @@ import {
   getManageDrawResults,
   updateDeliveryStatus,
 } from "@/api/client";
-import type { ManageContentDetailResponse, ManageRewardResponse, ManageInvitationCodeResponse, ManageDrawResultResponse } from "@/api/types";
+import type { ManageContentDetailResponse, ManageRewardResponse, ManageInvitationCodeResponse, ManageDrawResultResponse, PageResponse } from "@/api/types";
+
+type DeliveredFilter = "all" | "true" | "false";
+
+interface AppliedFilters {
+  drawnAtFrom: string;
+  drawnAtTo: string;
+  delivered: DeliveredFilter;
+  invitationCode: string;
+  rewardName: string;
+}
+
+const emptyAppliedFilters: AppliedFilters = {
+  drawnAtFrom: "",
+  drawnAtTo: "",
+  delivered: "all",
+  invitationCode: "",
+  rewardName: "",
+};
+
+const PAGE_SIZE = 20;
 
 // ── Local form types ────────────────────────────────────────────────────────
 
@@ -311,11 +338,27 @@ const ManageContent: React.FC = () => {
   const [editingCode, setEditingCode] = useState(false);
   const [editCodeError, setEditCodeError] = useState<string | null>(null);
 
-  // Draw results state
-  const [drawResults, setDrawResults] = useState<ManageDrawResultResponse[]>([]);
+  // Draw results state (Page 응답)
+  const [drawResultsPage, setDrawResultsPage] = useState<PageResponse<ManageDrawResultResponse> | null>(null);
   const [drawResultsLoading, setDrawResultsLoading] = useState(false);
   const [drawResultsError, setDrawResultsError] = useState<string | null>(null);
   const [updatingDeliveryId, setUpdatingDeliveryId] = useState<number | null>(null);
+
+  // Pagination
+  const [page, setPage] = useState(0);
+
+  // Pending filters (입력 중)
+  const [pendingDrawnAtFrom, setPendingDrawnAtFrom] = useState<Date | null>(null);
+  const [pendingDrawnAtTo, setPendingDrawnAtTo] = useState<Date | null>(null);
+  const [pendingDelivered, setPendingDelivered] = useState<DeliveredFilter>("all");
+  const [pendingInvitationCode, setPendingInvitationCode] = useState("");
+  const [pendingRewardName, setPendingRewardName] = useState("");
+
+  // Filter card open/close
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Applied filters (검색 클릭 시 적용)
+  const [appliedFilters, setAppliedFilters] = useState<AppliedFilters>(emptyAppliedFilters);
 
   useEffect(() => {
     if (!contentCode) return;
@@ -355,13 +398,50 @@ const ManageContent: React.FC = () => {
 
   useEffect(() => {
     if (!contentCode) return;
+    const toIso = (v: string) => (v ? new Date(v).toISOString() : undefined);
+
     setDrawResultsLoading(true);
     setDrawResultsError(null);
-    getManageDrawResults(contentCode)
-      .then(setDrawResults)
+    getManageDrawResults({
+      contentCode,
+      drawnAtFrom: toIso(appliedFilters.drawnAtFrom),
+      drawnAtTo: toIso(appliedFilters.drawnAtTo),
+      delivered:
+        appliedFilters.delivered === "all"
+          ? undefined
+          : appliedFilters.delivered === "true",
+      invitationCode: appliedFilters.invitationCode || undefined,
+      rewardName: appliedFilters.rewardName || undefined,
+      page,
+      size: PAGE_SIZE,
+    })
+      .then(setDrawResultsPage)
       .catch((e) => setDrawResultsError(e.message ?? "추첨 결과를 불러오지 못했습니다"))
       .finally(() => setDrawResultsLoading(false));
-  }, [contentCode]);
+  }, [contentCode, page, appliedFilters]);
+
+  const handleApplyFilters = () => {
+    const toStartOfDay = (d: Date) => { const r = new Date(d); r.setHours(0, 0, 0, 0); return r.toISOString(); };
+    const toEndOfDay = (d: Date) => { const r = new Date(d); r.setHours(23, 59, 59, 999); return r.toISOString(); };
+    setAppliedFilters({
+      drawnAtFrom: pendingDrawnAtFrom ? toStartOfDay(pendingDrawnAtFrom) : "",
+      drawnAtTo: pendingDrawnAtTo ? toEndOfDay(pendingDrawnAtTo) : "",
+      delivered: pendingDelivered,
+      invitationCode: pendingInvitationCode.trim(),
+      rewardName: pendingRewardName.trim(),
+    });
+    setPage(0);
+  };
+
+  const handleResetFilters = () => {
+    setPendingDrawnAtFrom(null);
+    setPendingDrawnAtTo(null);
+    setPendingDelivered("all");
+    setPendingInvitationCode("");
+    setPendingRewardName("");
+    setAppliedFilters(emptyAppliedFilters);
+    setPage(0);
+  };
 
   const shareLink = `${window.location.origin}/draw/${contentCode}`;
 
@@ -536,7 +616,11 @@ const ManageContent: React.FC = () => {
     setUpdatingDeliveryId(drawResultId);
     try {
       const updated = await updateDeliveryStatus(drawResultId, { delivered: !currentDelivered });
-      setDrawResults((prev) => prev.map((r) => (r.drawResultId === drawResultId ? updated : r)));
+      setDrawResultsPage((prev) =>
+        prev
+          ? { ...prev, content: prev.content.map((r) => (r.drawResultId === drawResultId ? updated : r)) }
+          : prev
+      );
     } catch {
       // 실패 시 상태 변경 없음
     } finally {
@@ -861,57 +945,257 @@ const ManageContent: React.FC = () => {
 
         {/* ── Results ── */}
         <TabsContent value="results">
-          <Card>
-            <CardContent className="p-0">
-              {drawResultsLoading && (
-                <p className="text-center text-muted-foreground py-6 text-sm">불러오는 중...</p>
-              )}
-              {!drawResultsLoading && drawResultsError && (
-                <p className="text-center text-destructive py-6 text-sm">{drawResultsError}</p>
-              )}
-              {!drawResultsLoading && !drawResultsError && (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[600px] text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-muted-foreground">
-                        <th className="px-5 py-2">코드</th>
-                        <th className="px-5 py-2">이름</th>
-                        <th className="px-5 py-2">보상</th>
-                        <th className="px-5 py-2 text-center">지급</th>
-                        <th className="px-5 py-2">시간</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {drawResults.length === 0 && (
-                        <tr>
-                          <td colSpan={5} className="px-5 py-6 text-center text-muted-foreground">추첨 결과가 없습니다</td>
-                        </tr>
-                      )}
-                      {drawResults.map((r) => (
-                        <tr key={r.drawResultId} className="border-b last:border-0">
-                          <td className="px-5 py-2.5 font-mono text-xs text-foreground">{r.invitationCode}</td>
-                          <td className="px-5 py-2.5 text-foreground">{r.invitationCodeName || "—"}</td>
-                          <td className="px-5 py-2.5 text-foreground">{r.rewardName}</td>
-                          <td className="px-5 py-2.5 text-center">
-                            <StateToggleButton
-                              checked={r.delivered}
-                              onCheckedChange={() => handleToggleDelivery(r.drawResultId, r.delivered)}
-                              checkedLabel="지급완료"
-                              uncheckedLabel="미지급"
-                              className={`h-7 ${updatingDeliveryId === r.drawResultId ? "opacity-50 pointer-events-none" : ""}`}
+          {(() => {
+            const hasActiveFilter =
+              appliedFilters.drawnAtFrom !== "" || appliedFilters.drawnAtTo !== "" ||
+              appliedFilters.delivered !== "all" || appliedFilters.invitationCode !== "" ||
+              appliedFilters.rewardName !== "";
+            const totalPages = drawResultsPage?.totalPages ?? 0;
+            const currentPage = (drawResultsPage?.number ?? 0) + 1;
+            const pageNumbers = (() => {
+              const max = 5;
+              let start = Math.max(1, currentPage - 2);
+              let end = Math.min(totalPages, start + max - 1);
+              start = Math.max(1, end - max + 1);
+              return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+            })();
+            return (
+              <div className="space-y-6">
+                {/* Filter Card */}
+                <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <Card>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="pb-3 cursor-pointer select-none hover:bg-muted/40 transition-colors rounded-t-lg">
+                      <CardTitle className="text-base flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          상세 검색
+                          {hasActiveFilter && (
+                            <Badge variant="secondary" className="text-xs">필터 적용 중</Badge>
+                          )}
+                        </span>
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                            isFilterOpen && "rotate-180"
+                          )}
+                        />
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Start date */}
+                      <div className="space-y-1.5">
+                        <Label className="text-sm">시작일</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !pendingDrawnAtFrom && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {pendingDrawnAtFrom ? format(pendingDrawnAtFrom, "yyyy.MM.dd") : "날짜 선택"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={pendingDrawnAtFrom ?? undefined}
+                              onSelect={(d) => setPendingDrawnAtFrom(d ?? null)}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
                             />
-                          </td>
-                          <td className="px-5 py-2.5 text-muted-foreground">
-                            {new Date(r.drawnAt).toLocaleString("ko-KR")}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* End date */}
+                      <div className="space-y-1.5">
+                        <Label className="text-sm">종료일</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !pendingDrawnAtTo && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {pendingDrawnAtTo ? format(pendingDrawnAtTo, "yyyy.MM.dd") : "날짜 선택"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={pendingDrawnAtTo ?? undefined}
+                              onSelect={(d) => setPendingDrawnAtTo(d ?? null)}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* Delivered status */}
+                      <div className="space-y-1.5">
+                        <Label className="text-sm">지급 상태</Label>
+                        <Select
+                          value={pendingDelivered}
+                          onValueChange={(v) => setPendingDelivered(v as DeliveredFilter)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">전체</SelectItem>
+                            <SelectItem value="true">지급완료</SelectItem>
+                            <SelectItem value="false">미지급</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Invitation code */}
+                      <div className="space-y-1.5">
+                        <Label className="text-sm">추첨 코드</Label>
+                        <Input
+                          placeholder="정확히 일치"
+                          value={pendingInvitationCode}
+                          onChange={(e) => setPendingInvitationCode(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Reward name */}
+                      <div className="space-y-1.5">
+                        <Label className="text-sm">보상명</Label>
+                        <Input
+                          placeholder="부분 일치"
+                          value={pendingRewardName}
+                          onChange={(e) => setPendingRewardName(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                      <Button variant="outline" onClick={handleResetFilters} className="gap-1.5">
+                        <RotateCcw className="h-4 w-4" />
+                        초기화
+                      </Button>
+                      <Button onClick={handleApplyFilters} className="gap-1.5">
+                        <Search className="h-4 w-4" />
+                        검색
+                      </Button>
+                    </div>
+                  </CardContent>
+                  </CollapsibleContent>
+                </Card>
+                </Collapsible>
+
+                {/* Results Card */}
+                <Card>
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <CardTitle className="text-base">조회 결과</CardTitle>
+                    <span className="text-sm text-muted-foreground">
+                      총 {drawResultsPage?.totalElements ?? 0}건
+                    </span>
+                  </CardHeader>
+                  <CardContent>
+                    {drawResultsLoading && (
+                      <p className="text-center text-muted-foreground py-6 text-sm">불러오는 중...</p>
+                    )}
+                    {!drawResultsLoading && drawResultsError && (
+                      <p className="text-center text-destructive py-6 text-sm">{drawResultsError}</p>
+                    )}
+                    {!drawResultsLoading && !drawResultsError && (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="whitespace-nowrap">코드</TableHead>
+                              <TableHead className="whitespace-nowrap">이름</TableHead>
+                              <TableHead className="whitespace-nowrap">보상</TableHead>
+                              <TableHead className="whitespace-nowrap">지급</TableHead>
+                              <TableHead className="whitespace-nowrap">시간</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(drawResultsPage?.content.length ?? 0) === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                                  추첨 결과가 없습니다
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              (drawResultsPage?.content ?? []).map((r) => (
+                                <TableRow key={r.drawResultId} className="hover:bg-muted/50">
+                                  <TableCell className="whitespace-nowrap font-mono text-xs">
+                                    {r.invitationCode}
+                                  </TableCell>
+                                  <TableCell className="whitespace-nowrap">
+                                    {r.invitationCodeName || "—"}
+                                  </TableCell>
+                                  <TableCell className="whitespace-nowrap">{r.rewardName}</TableCell>
+                                  <TableCell className="whitespace-nowrap">
+                                    <StateToggleButton
+                                      checked={r.delivered}
+                                      onCheckedChange={() => handleToggleDelivery(r.drawResultId, r.delivered)}
+                                      checkedLabel="지급완료"
+                                      uncheckedLabel="미지급"
+                                      className={`h-7 ${updatingDeliveryId === r.drawResultId ? "opacity-50 pointer-events-none" : ""}`}
+                                    />
+                                  </TableCell>
+                                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                                    {new Date(r.drawnAt).toLocaleString("ko-KR")}
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-1 mt-6">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={drawResultsPage?.first ?? true}
+                          onClick={() => setPage((p) => Math.max(0, p - 1))}
+                        >
+                          이전
+                        </Button>
+                        {pageNumbers.map((n) => (
+                          <Button
+                            key={n}
+                            variant={n === currentPage ? "default" : "outline"}
+                            size="sm"
+                            className="w-9"
+                            onClick={() => setPage(n - 1)}
+                          >
+                            {n}
+                          </Button>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={drawResultsPage?.last ?? true}
+                          onClick={() => setPage((p) => p + 1)}
+                        >
+                          다음
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
         </TabsContent>
 
         {/* ── Share ── */}
