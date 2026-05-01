@@ -173,11 +173,10 @@ export async function getCurrentUser(): Promise<UserInfo> {
   return authRequest<UserInfo>("/user");
 }
 
-export async function updateCurrentUser(payload: UserRequest): Promise<UserInfo> {
-  // Spec says parameters are in query: ?request.name=...
-  const params = new URLSearchParams({ name: payload.name });
-  return authRequest<UserInfo>(`/user?${params.toString()}`, {
+export async function updateCurrentUser(payload: { name: string }): Promise<UserInfo> {
+  return authRequest<UserInfo>("/user", {
     method: "PUT",
+    body: JSON.stringify(payload),
   });
 }
 
