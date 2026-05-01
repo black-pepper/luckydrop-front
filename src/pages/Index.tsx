@@ -101,7 +101,7 @@ const Index = () => {
 
       <footer className="py-4 text-xs text-muted-foreground">
         <nav className="flex items-center justify-center gap-x-4">
-          <button onClick={() => navigate("/")} className="hover:text-foreground transition-colors">소개</button>
+          <button onClick={() => navigate("/")} className="hover:text-foreground transition-colors">서비스 소개</button>
           <button onClick={() => navigate("/policy?tab=terms")} className="hover:text-foreground transition-colors">이용약관</button>
           <button onClick={() => navigate("/policy?tab=privacy")} className="hover:text-foreground transition-colors">개인정보처리방침</button>
           <a href="#" className="hover:text-foreground transition-colors">문의</a>

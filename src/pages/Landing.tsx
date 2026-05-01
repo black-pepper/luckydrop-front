@@ -11,7 +11,7 @@ const LandingHeader = () => {
   const navigate = useNavigate();
 
   const links = [
-    { label: "소개", href: "#features" },
+    { label: "소개", href: "#", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) },
     { label: "역할", href: "#roles" },
     { label: "이용 흐름", href: "#host-flow" },
   ];
@@ -24,7 +24,7 @@ const LandingHeader = () => {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
           {links.map((l) => (
-            <a key={l.label} href={l.href} className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
+            <a key={l.label} href={l.href} onClick={l.onClick} className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
               {l.label}
             </a>
           ))}
@@ -43,7 +43,7 @@ const LandingHeader = () => {
       {menuOpen && (
         <div className="md:hidden border-t border-border bg-background px-4 pb-4 space-y-3">
           {links.map((l) => (
-            <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)} className="block py-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
+            <a key={l.label} href={l.href} onClick={() => { setMenuOpen(false); l.onClick?.(); }} className="block py-2 text-sm font-semibold text-muted-foreground hover:text-foreground">
               {l.label}
             </a>
           ))}
@@ -69,7 +69,7 @@ const HeroSection = () => {
         이벤트를 만들고,<br />코드 하나로 참여하세요
       </h1>
       <p className="text-muted-foreground text-base md:text-lg max-w-md md:max-w-2xl mx-auto mb-8">
-        룰렛 이벤트를 손쉽게 만들고, 참여 코드 하나로 공유할 수 있어요.
+        이벤트를 손쉽게 만들고, 참여 코드 하나로 공유할 수 있어요.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Button size="lg" className="w-full sm:w-auto gap-2" onClick={() => navigate("/manage/login")}>
@@ -118,7 +118,7 @@ const RoleEntrySection = () => {
             </div>
             <p className="text-sm text-muted-foreground">로그인 없이 코드 하나로 빠르게 참여할 수 있어요.</p>
             <ul className="space-y-1.5">
-              {["회원가입 필요 없음", "코드 입력으로 즉시 참여", "룰렛으로 보상 획득"].map((p) => (
+              {["회원가입 필요 없음", "코드 입력으로 즉시 참여", "이벤트 참여로 보상 획득"].map((p) => (
                 <li key={p} className="flex items-center gap-2 text-sm text-foreground">
                   <ChevronRight size={14} className="text-primary shrink-0" /> {p}
                 </li>
@@ -136,7 +136,7 @@ const FeaturesSection = () => {
   const features = [
     {
       icon: <Gift size={28} className="text-primary" />,
-      title: "룰렛 이벤트",
+      title: "뽑기 이벤트",
       desc: "보상을 설정하고 코드를 나눠주면, 참여자가 직접 뽑기를 즐길 수 있어요.",
       iconBg: "bg-[hsl(var(--peach)/0.35)]",
       comingSoon: false,
@@ -188,7 +188,7 @@ const FeaturesSection = () => {
 /* ───────── Flow Steps ───────── */
 const FlowSection = () => {
   const steps = [
-    { num: "1", title: "콘텐츠 생성", desc: "주최자가 룰렛이나 메시지함을 만들어요" },
+    { num: "1", title: "콘텐츠 생성", desc: "주최자가 이벤트를 만들어요" },
     { num: "2", title: "코드 공유", desc: "참여 코드를 생성하고 나눠줘요" },
     { num: "3", title: "참여자 참여", desc: "코드를 입력하면 바로 참여할 수 있어요" },
     { num: "4", title: "결과 확인", desc: "주최자와 참여자 모두 결과를 확인해요" },
