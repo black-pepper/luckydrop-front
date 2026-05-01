@@ -7,6 +7,7 @@ import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Policy from "./pages/Policy";
+import Contact from "./pages/Contact";
 import ManageLogin from "./pages/manage/ManageLogin";
 import ManageDashboard from "./pages/manage/ManageDashboard";
 import CreateContent from "./pages/manage/CreateContent";
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/draw/:contentCode" element={<Index />} />
           <Route path="/policy" element={<Policy />} />
+          <Route path="/contact" element={<Contact />} />
 
           {/* Manage routes */}
           <Route path="/manage/login" element={<ManageLogin />} />

@@ -23,6 +23,7 @@ import type {
   ManageDrawResultsParams,
   PageResponse,
   DrawResultDeliveryUpdateRequest,
+  InquiryRequest,
 } from "./types";
 import { supabase } from "@/lib/supabase";
 
@@ -269,6 +270,15 @@ export async function getManageDrawResults(
   return authRequest<PageResponse<ManageDrawResultResponse>>(
     `/api/manage/draw-results?${sp.toString()}`
   );
+}
+
+// ── Inquiry API ────────────────────────────────────────────────────────────
+
+export async function createInquiry(payload: InquiryRequest): Promise<void> {
+  return request<void>("/inquiries", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function updateDeliveryStatus(

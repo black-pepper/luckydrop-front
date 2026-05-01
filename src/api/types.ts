@@ -238,3 +238,12 @@ export interface ManageDrawResultResponse {
 export interface DrawResultDeliveryUpdateRequest {
   delivered: boolean;
 }
+
+// POST /inquiries
+export type InquiryType = "GENERAL" | "BUG" | "FEATURE" | "ETC";
+
+export interface InquiryRequest {
+  type: InquiryType;
+  title: string;
+  content: string;
+}
