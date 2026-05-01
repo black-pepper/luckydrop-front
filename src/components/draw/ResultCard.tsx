@@ -13,17 +13,17 @@ interface ResultCardProps {
 
 // 보상 이름 기반으로 이모지와 등급 추정 (API에 grade/emoji 없으므로 fallback)
 const guessEmoji = (name: string): string => {
-  if (name.includes("스타벅스") || name.includes("커피")) return "☕";
+  if (name.includes("커피") || name.includes("아메리카노")) return "☕";
   if (name.includes("치킨")) return "🍗";
-  if (name.includes("상품권")) return "🎁";
-  if (name.includes("비타")) return "🥤";
-  if (name.includes("스페셜") || name.includes("에어팟")) return "✨";
+  if (name.includes("상품권") || name.includes("교환권")) return "🎁";
+  if (name.includes("카페") || name.includes("음료")) return "🥤";
+  if (name.includes("스페셜")) return "✨";
   if (name.includes("꽝")) return "💨";
   return "🎉";
 };
 
 const guessGrade = (name: string): "special" | "normal" | "consolation" => {
-  if (name.includes("스페셜") || name.includes("에어팟")) return "special";
+  if (name.includes("스페셜")) return "special";
   if (name.includes("꽝") || name.includes("감사")) return "consolation";
   return "normal";
 };
@@ -47,7 +47,7 @@ const ResultCard = ({ rewardName, rewardImageUrl, drawNo, remainingDraws, onDraw
 
   return (
     <div className="animate-bounce-in flex flex-col items-center gap-5 w-full max-w-sm mx-auto">
-      <div className={`w-full rounded-3xl bg-gradient-to-br ${gradeBg[grade]} p-6 shadow-[var(--shadow-card)] text-center space-y-4`}>
+      <div className={`w-full rounded-2xl bg-gradient-to-br ${gradeBg[grade]} p-6 shadow-[var(--shadow-card)] text-center space-y-4`}>
         <div className="flex justify-center">
           <div className="animate-pop w-14 h-14 rounded-2xl bg-card/80 flex items-center justify-center">
             <Sparkles className="w-7 h-7 text-primary" />

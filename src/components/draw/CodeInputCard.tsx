@@ -5,10 +5,25 @@ interface CodeInputCardProps {
   onSubmit: (code: string) => void;
   error: string | null;
   loading: boolean;
+  title?: string | null;
+  description?: string | null;
+  startAt?: string | null;
+  endAt?: string | null;
+  initialValue?: string;
 }
 
-const CodeInputCard = ({ onSubmit, error, loading }: CodeInputCardProps) => {
-  const [code, setCode] = useState("");
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+}
+
+const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, endAt, initialValue = "" }: CodeInputCardProps) => {
+  const [code, setCode] = useState(initialValue);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,15 +33,15 @@ const CodeInputCard = ({ onSubmit, error, loading }: CodeInputCardProps) => {
   return (
     <div className="animate-bounce-in flex flex-col items-center gap-6 w-full max-w-sm mx-auto">
       <div className="animate-float">
-        <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
+        <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
           <Gift className="w-10 h-10 text-primary" />
         </div>
       </div>
 
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-extrabold text-foreground">🎉 럭키 드로우</h1>
+        <h1 className="text-2xl font-extrabold text-foreground">{title ?? "🎉 럭키 드로우"}</h1>
         <p className="text-muted-foreground text-sm">
-          발급받은 코드를 입력하고 행운을 뽑아보세요!
+          {description ?? "발급받은 코드를 입력하고 행운을 뽑아보세요!"}
         </p>
       </div>
 
@@ -36,7 +51,10 @@ const CodeInputCard = ({ onSubmit, error, loading }: CodeInputCardProps) => {
             type="text"
             value={code}
             onChange={(e) => {
-              setCode(e.target.value.toUpperCase());
+              const value = e.target.value;
+              // 대문자, 소문자, 숫자, 하이픈(-), 언더스코어(_)만 허용
+              const filteredValue = value.replace(/[^A-Za-z0-9-_]/g, "");
+              setCode(filteredValue);
             }}
             placeholder="참여 코드 입력"
             maxLength={10}
@@ -68,10 +86,18 @@ const CodeInputCard = ({ onSubmit, error, loading }: CodeInputCardProps) => {
         </button>
       </form>
 
-      <p className="text-xs text-muted-foreground text-center leading-relaxed">
-        이벤트 기간: 2026.03.01 ~ 2026.03.31<br />
-        코드는 요청 시 발급됩니다
-      </p>
+      {(startAt || endAt) && (
+        <p className="text-xs text-muted-foreground text-center leading-relaxed">
+          이벤트 기간: {startAt ? formatDateTime(startAt) : ""} ~ {endAt ? formatDateTime(endAt) : ""}<br />
+          코드는 요청 시 발급됩니다
+        </p>
+      )}
+      {!startAt && !endAt && (
+        <p className="text-xs text-muted-foreground text-center leading-relaxed">
+          이벤트 기간: 무기한<br />
+          코드는 요청 시 발급됩니다
+        </p>
+      )}
     </div>
   );
 };

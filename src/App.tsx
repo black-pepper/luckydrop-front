@@ -3,12 +3,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import CreateContent from "./pages/admin/CreateContent";
-import ManageContent from "./pages/admin/ManageContent";
+import Policy from "./pages/Policy";
+import Contact from "./pages/Contact";
+import ManageLogin from "./pages/manage/ManageLogin";
+import ManageDashboard from "./pages/manage/ManageDashboard";
+import CreateContent from "./pages/manage/CreateContent";
+import ManageContent from "./pages/manage/ManageContent";
+import ManageSettings from "./pages/manage/ManageSettings";
 
 const queryClient = new QueryClient();
 
@@ -19,13 +23,17 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/draw/:contentCode" element={<Index />} />
+          <Route path="/policy" element={<Policy />} />
+          <Route path="/contact" element={<Contact />} />
 
-          {/* Admin routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/create" element={<CreateContent />} />
-          <Route path="/admin/manage/:id" element={<ManageContent />} />
+          {/* Manage routes */}
+          <Route path="/manage/login" element={<ManageLogin />} />
+          <Route path="/manage" element={<ManageDashboard />} />
+          <Route path="/manage/create" element={<CreateContent />} />
+          <Route path="/manage/settings" element={<ManageSettings />} />
+          <Route path="/manage/:contentCode" element={<ManageContent />} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

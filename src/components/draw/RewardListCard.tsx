@@ -1,9 +1,14 @@
 import { useState } from "react";
 import { Gift, ChevronDown, ChevronUp } from "lucide-react";
 import { getRewards } from "@/api/client";
-import type { RewardResponse } from "@/api/types";
+import type { DrawParticipantParams, RewardResponse } from "@/api/types";
 
-const RewardListCard = () => {
+interface RewardListCardProps {
+  contentCode: string;
+  invitationCode: string;
+}
+
+const RewardListCard = ({ contentCode, invitationCode }: RewardListCardProps) => {
   const [open, setOpen] = useState(false);
   const [rewards, setRewards] = useState<RewardResponse[]>([]);
   const [loading, setLoading] = useState(false);
@@ -15,7 +20,8 @@ const RewardListCard = () => {
     if (next && !loaded) {
       setLoading(true);
       try {
-        const data = await getRewards();
+        const params: DrawParticipantParams = { contentCode, invitationCode };
+        const data = await getRewards(params);
         setRewards(data ?? []);
         setLoaded(true);
       } catch {

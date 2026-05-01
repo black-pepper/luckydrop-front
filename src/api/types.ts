@@ -5,17 +5,28 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-// GET /api/draw/verify?code=
+export interface DrawParticipantParams {
+  contentCode: string;
+  invitationCode: string;
+}
+
+// GET /api/draw/verify?contentCode=&invitationCode=
+export type DrawStatus =
+  | "DRAWABLE"
+  | "NO_REMAINING"
+  | "CONTENT_NOT_STARTED"
+  | "CONTENT_EXPIRED"
+  | "NO_AVAILABLE_REWARD";
+
 export interface CodeVerifyResponse {
-  maskedName: string;
+  name: string;
   remainingCount: number;
   canDraw: boolean;
+  drawStatus: DrawStatus;
 }
 
 // POST /api/draw/execute
-export interface DrawRequest {
-  code: string;
-}
+export type DrawRequest = DrawParticipantParams;
 
 export interface DrawResponse {
   drawResultId: number;
@@ -26,7 +37,7 @@ export interface DrawResponse {
   drawnAt: string; // ISO date-time
 }
 
-// GET /api/draw/rewards
+// GET /api/draw/rewards?contentCode=&invitationCode=
 export interface RewardResponse {
   id: number;
   name: string;
@@ -38,11 +49,201 @@ export interface RewardResponse {
   imageUrl?: string;
 }
 
-// GET /api/draw/results?code=&scope=
+// GET /api/draw/results?contentCode=&invitationCode=
 export interface DrawResultResponse {
   drawResultId: number;
   rewardName: string;
   rewardImageUrl?: string;
   drawNo: number;
   drawnAt: string; // ISO date-time
+  delivered: boolean;
+}
+
+// GET /api/draw/contents/{contentCode}
+export interface ParticipantContentDetailResponse {
+  code: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  startAt?: string; // ISO date-time
+  endAt?: string;   // ISO date-time
+}
+
+// Manage content types
+export interface ManageContentResponse {
+  code: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  startAt?: string; // ISO date-time
+  endAt?: string;   // ISO date-time
+}
+
+export interface ManageContentDetailResponse {
+  code: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  startAt?: string; // ISO date-time
+  endAt?: string;   // ISO date-time
+}
+
+export interface ManageContentCreateRequest {
+  type: string;
+  title: string;
+  description?: string;
+  startAt?: string; // ISO date-time
+  endAt?: string;   // ISO date-time
+}
+
+export interface ManageContentUpdateRequest {
+  type: string;
+  title: string;
+  description?: string;
+  startAt?: string; // ISO date-time
+  endAt?: string;   // ISO date-time
+}
+
+export interface ManageContentDeleteResponse {
+  code: string;
+  deleted: boolean;
+}
+
+// GET /user
+export interface UserInfo {
+  name: string;
+  createdAt?: string; // ISO date-time
+}
+
+// PUT /user
+export interface UserRequest {
+  name: string;
+}
+
+// Manage reward types
+// GET /api/manage/rewards?contentCode={contentCode}
+// GET /api/manage/rewards/{rewardId}
+export interface ManageRewardResponse {
+  id: number;
+  contentCode: string;
+  name: string;
+  description?: string;
+  weight: number;
+  stock?: number;
+  unlimited: boolean;
+  imageUrl?: string;
+  active: boolean;
+  allowDuplicateReward: boolean;
+  createdAt: string; // ISO date-time
+  updatedAt: string; // ISO date-time
+}
+
+// POST /api/manage/rewards
+export interface RewardCreateRequest {
+  contentCode: string;
+  name: string;
+  description?: string;
+  weight: number;
+  stock?: number;
+  imageUrl?: string;
+  allowDuplicateReward?: boolean;
+  active: boolean;
+}
+
+// PUT /api/manage/rewards/{rewardId}
+export interface RewardUpdateRequest {
+  name: string;
+  description?: string;
+  weight: number;
+  stock?: number;
+  imageUrl?: string;
+  allowDuplicateReward?: boolean;
+  active: boolean;
+}
+
+// Manage invitation code (추첨 코드) types
+// GET /api/manage/invitation-codes?contentCode={contentCode}
+// GET /api/manage/invitation-codes/{invitationCodeId}
+export interface ManageInvitationCodeResponse {
+  id: number;
+  contentCode: string;
+  code: string;
+  name?: string;
+  allowedDrawCount: number;
+  usedDrawCount: number;
+  remainingCount: number;
+  active: boolean;
+  expiresAt?: string; // ISO date-time
+  lastUsedAt?: string; // ISO date-time
+  createdAt: string; // ISO date-time
+  updatedAt: string; // ISO date-time
+}
+
+// POST /api/manage/invitation-codes
+export interface InvitationCodeCreateRequest {
+  contentCode: string;
+  code: string;
+  name?: string;
+  allowedDrawCount: number;
+  expiresAt?: string; // ISO date-time
+  active: boolean;
+}
+
+// PUT /api/manage/invitation-codes/{invitationCodeId}
+export interface InvitationCodeUpdateRequest {
+  name?: string;
+  allowedDrawCount: number;
+  expiresAt?: string; // ISO date-time
+  active: boolean;
+}
+
+// Spring Page 래퍼 (UI에서 사용하는 필드만)
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number; // 0-based current page
+  size: number;
+  first: boolean;
+  last: boolean;
+}
+
+// GET /api/manage/draw-results 쿼리 파라미터
+export interface ManageDrawResultsParams {
+  contentCode: string;
+  drawnAtFrom?: string; // ISO date-time
+  drawnAtTo?: string; // ISO date-time
+  delivered?: boolean;
+  invitationCode?: string; // 정확 일치
+  rewardName?: string; // 부분 일치
+  page?: number; // default 0
+  size?: number; // default 20
+}
+
+// GET /api/manage/draw-results
+export interface ManageDrawResultResponse {
+  drawResultId: number;
+  invitationCode: string;
+  invitationCodeName: string;
+  rewardName: string;
+  drawNo: number;
+  drawnAt: string; // ISO date-time
+  delivered: boolean;
+}
+
+// PUT /api/manage/draw-results/{drawResultId}/delivery
+export interface DrawResultDeliveryUpdateRequest {
+  delivered: boolean;
+}
+
+// POST /inquiries
+export type InquiryType = "GENERAL" | "BUG" | "FEATURE" | "ETC";
+
+export interface InquiryRequest {
+  type: InquiryType;
+  title: string;
+  content: string;
 }

@@ -1,1 +1,13 @@
 /// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_API_BASE_URL?: string;
+  readonly VITE_SUPABASE_URL?: string;
+  readonly VITE_SUPABASE_ANON_KEY?: string;
+  readonly VITE_SUPABASE_REDIRECT_URL?: string;
+  readonly VITE_MANAGE_LOGIN_REDIRECT_PATH?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}

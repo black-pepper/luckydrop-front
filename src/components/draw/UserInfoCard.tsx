@@ -1,28 +1,97 @@
 import { User, RefreshCw, ClipboardList } from "lucide-react";
 import RewardListCard from "./RewardListCard";
+import type { DrawStatus } from "@/api/types";
 
 interface UserInfoCardProps {
-  maskedName: string;
+  contentCode: string;
+  invitationCode: string;
+  userName: string;
   remainingDraws: number;
   hasHistory: boolean;
+  isExpired?: boolean;
+  drawStatus: DrawStatus | null;
   onDraw: () => void;
   onBack: () => void;
   onViewHistory: () => void;
 }
 
-const UserInfoCard = ({ maskedName, remainingDraws, hasHistory, onDraw, onBack, onViewHistory }: UserInfoCardProps) => {
-  const noDrawsLeft = remainingDraws <= 0;
+const UserInfoCard = ({
+  contentCode,
+  invitationCode,
+  userName,
+  remainingDraws,
+  hasHistory,
+  isExpired = false,
+  drawStatus,
+  onDraw,
+  onBack,
+  onViewHistory,
+}: UserInfoCardProps) => {
+  const renderDrawButton = () => {
+    if (isExpired || drawStatus === "CONTENT_EXPIRED") {
+      return (
+        <button
+          disabled
+          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-lg opacity-60 cursor-not-allowed"
+        >
+          종료되었습니다.
+        </button>
+      );
+    }
+
+    if (drawStatus === "CONTENT_NOT_STARTED") {
+      return (
+        <button
+          disabled
+          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-lg opacity-60 cursor-not-allowed"
+        >
+          아직 시작되지 않았습니다
+        </button>
+      );
+    }
+
+    if (drawStatus === "NO_REMAINING" || remainingDraws <= 0) {
+      return (
+        <button
+          disabled
+          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-base opacity-60 cursor-not-allowed"
+        >
+          기회가 모두 소진되었습니다
+        </button>
+      );
+    }
+
+    if (drawStatus === "NO_AVAILABLE_REWARD") {
+      return (
+        <button
+          disabled
+          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-base opacity-60 cursor-not-allowed"
+        >
+          남은 상품이 없습니다
+        </button>
+      );
+    }
+
+    return (
+      <button
+        onClick={onDraw}
+        className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-lg shadow-[var(--shadow-soft)] hover:brightness-105 active:scale-[0.98] transition-all"
+      >
+        🎰 뽑기 시작!
+      </button>
+    );
+  };
 
   return (
     <div className="animate-bounce-in flex flex-col items-center gap-5 w-full max-w-sm mx-auto">
-      <div className="w-full rounded-3xl bg-card p-6 shadow-[var(--shadow-card)] space-y-5">
+      <div className="w-full rounded-2xl bg-card p-6 shadow-[var(--shadow-card)] space-y-5">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-secondary/40 flex items-center justify-center">
             <User className="w-6 h-6 text-secondary-foreground" />
           </div>
           <div>
             <p className="text-sm text-muted-foreground">환영합니다!</p>
-            <p className="text-xl font-extrabold text-card-foreground">{maskedName} 님</p>
+            <p className="text-xl font-extrabold text-card-foreground">{userName} 님</p>
           </div>
         </div>
 
@@ -34,18 +103,7 @@ const UserInfoCard = ({ maskedName, remainingDraws, hasHistory, onDraw, onBack, 
           </span>
         </div>
 
-        {noDrawsLeft ? (
-          <div className="text-center text-sm text-muted-foreground py-2">
-            사용할 수 있는 기회가 없습니다 😢
-          </div>
-        ) : (
-          <button
-            onClick={onDraw}
-            className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-lg shadow-[var(--shadow-soft)] hover:brightness-105 active:scale-[0.98] transition-all"
-          >
-            🎰 뽑기 시작!
-          </button>
-        )}
+        {renderDrawButton()}
 
         {hasHistory && (
           <button
@@ -57,7 +115,7 @@ const UserInfoCard = ({ maskedName, remainingDraws, hasHistory, onDraw, onBack, 
           </button>
         )}
 
-        <RewardListCard />
+        <RewardListCard contentCode={contentCode} invitationCode={invitationCode} />
       </div>
 
       <button
