@@ -79,7 +79,7 @@ const Contact = () => {
                   <div className="text-sm">
                     <p className="font-medium text-foreground">문의가 접수되었습니다.</p>
                     <p className="mt-1 text-muted-foreground">
-                      문의가 정상적으로 접수되었습니다. 빠른 시일 내에 답변드리겠습니다.
+                      문의가 정상적으로 접수되었습니다. 감사합니다.
                     </p>
                   </div>
                 </div>
@@ -159,7 +159,7 @@ const Contact = () => {
               </form>
 
               <p className="mt-6 text-center text-xs text-muted-foreground">
-                긴급 문의는 이메일로 연락해주세요: support@luckydrop.app
+                긴급 문의는 이메일로 연락해주세요: peppercode01@gmail.com
               </p>
             </CardContent>
           </Card>
