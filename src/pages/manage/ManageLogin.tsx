@@ -4,6 +4,7 @@ import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAccessTokenFromSession, isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { getCurrentUser } from "@/api/client";
 
 const DEFAULT_REDIRECT_PATH = import.meta.env.VITE_MANAGE_LOGIN_REDIRECT_PATH ?? "/manage";
 const CALLBACK_EVENT_TYPES: AuthChangeEvent[] = ["INITIAL_SESSION", "SIGNED_IN", "TOKEN_REFRESHED"];
@@ -31,6 +32,7 @@ const ManageLogin: React.FC = () => {
       setStatusMessage("로그인 정보를 확인하고 있어요.");
 
       try {
+        await getCurrentUser();
         setStatusMessage("로그인에 성공했어요. 관리자 화면으로 이동합니다.");
         navigate(DEFAULT_REDIRECT_PATH, { replace: true });
       } catch (error) {
