@@ -20,6 +20,7 @@ import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save, Calen
 import { cn } from "@/lib/utils";
 import { generateCode } from "@/lib/utils";
 import { getContentTypeLabel } from "@/lib/contentTypeConstants";
+import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
 import {
   getManageContentDetail,
   updateManageContent,
@@ -81,6 +82,7 @@ interface RewardFormState {
   name: string;
   description: string;
   weight: number;
+  poolCount: number;
   stock: number;
   unlimited: boolean;
   imageUrl: string;
@@ -89,14 +91,15 @@ interface RewardFormState {
 }
 
 const emptyForm = (): RewardFormState => ({
-  name: "", description: "", weight: 10, stock: 10,
+  name: "", description: "", weight: 10, poolCount: 5, stock: 10,
   unlimited: true, imageUrl: "", allowDuplicateReward: true, active: true,
 });
 
 const fromApiReward = (r: ManageRewardResponse): RewardFormState => ({
   name: r.name,
   description: r.description ?? "",
-  weight: r.weight,
+  weight: r.weight ?? 10,
+  poolCount: r.poolCount ?? 5,
   stock: r.stock ?? 0,
   unlimited: r.stock == null,
   imageUrl: r.imageUrl ?? "",
@@ -115,7 +118,8 @@ const RewardFormCard: React.FC<{
   onCancel: () => void;
   saving?: boolean;
   error?: string | null;
-}> = ({ formId, title, form, onChange, onSave, onCancel, saving, error }) => (
+  mode: DrawMode;
+}> = ({ formId, title, form, onChange, onSave, onCancel, saving, error, mode }) => (
   <Card className="border border-primary/30 bg-muted/20">
     <CardContent className="p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -136,37 +140,52 @@ const RewardFormCard: React.FC<{
         <Label className="text-sm pl-1">설명</Label>
         <Input placeholder="보상에 대한 간단한 설명" value={form.description} onChange={(e) => onChange({ ...form, description: e.target.value })} />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      {mode === "WEIGHTED" ? (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 pl-1">
+              <Label className="text-sm">가중치</Label>
+              <span className="text-[11px] text-muted-foreground">당첨 확률 비율에 사용되는 값</span>
+            </div>
+            <Input type="number" placeholder="10" value={form.weight} onChange={(e) => onChange({ ...form, weight: Number(e.target.value) })} />
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 pl-1">
+              <Label className="text-sm">수량</Label>
+              <span className="text-[11px] text-muted-foreground">남아 있는 보상 개수</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <StateToggleButton
+                checked={form.unlimited}
+                onCheckedChange={(v) => onChange({ ...form, unlimited: v })}
+                checkedLabel="무제한"
+                uncheckedLabel="개수 지정"
+              />
+              <Input
+                type="number"
+                placeholder="수량"
+                value={form.stock}
+                disabled={form.unlimited}
+                className={`flex-1 ${form.unlimited ? "opacity-50" : ""}`}
+                onChange={(e) => onChange({ ...form, stock: Number(e.target.value) })}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 pl-1">
-            <Label className="text-sm">가중치</Label>
-            <span className="text-[11px] text-muted-foreground">당첨 확률 비율에 사용되는 값</span>
+            <Label className="text-sm">개수</Label>
+            <span className="text-[11px] text-muted-foreground">당첨 가능한 제비 수</span>
           </div>
-          <Input type="number" placeholder="10" value={form.weight} onChange={(e) => onChange({ ...form, weight: Number(e.target.value) })} />
+          <Input
+            type="number"
+            placeholder="5"
+            value={form.poolCount}
+            onChange={(e) => onChange({ ...form, poolCount: Number(e.target.value) })}
+          />
         </div>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 pl-1">
-            <Label className="text-sm">수량</Label>
-            <span className="text-[11px] text-muted-foreground">남아 있는 보상 개수</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <StateToggleButton
-              checked={form.unlimited}
-              onCheckedChange={(v) => onChange({ ...form, unlimited: v })}
-              checkedLabel="무제한"
-              uncheckedLabel="개수 지정"
-            />
-            <Input
-              type="number"
-              placeholder="수량"
-              value={form.stock}
-              disabled={form.unlimited}
-              className={`flex-1 ${form.unlimited ? "opacity-50" : ""}`}
-              onChange={(e) => onChange({ ...form, stock: Number(e.target.value) })}
-            />
-          </div>
-        </div>
-      </div>
+      )}
       <div className="space-y-1.5">
         <Label className="text-sm pl-1">이미지 URL</Label>
         <div className="flex gap-3 items-start">
@@ -303,6 +322,7 @@ const ManageContent: React.FC = () => {
   const [rewards, setRewards] = useState<ManageRewardResponse[]>([]);
   const [rewardsLoading, setRewardsLoading] = useState(false);
   const [rewardsError, setRewardsError] = useState<string | null>(null);
+  const [drawMode, setDrawMode] = useState<DrawMode>("WEIGHTED");
 
   // Add reward form
   const [showAddForm, setShowAddForm] = useState(false);
@@ -376,7 +396,11 @@ const ManageContent: React.FC = () => {
     setRewardsLoading(true);
     setRewardsError(null);
     getManageRewardsByContent(contentCode)
-      .then(setRewards)
+      .then((data) => {
+        setRewards(data);
+        const first = data[0];
+        if (first) setDrawMode(first.poolCount !== null ? "DRAW" : "WEIGHTED");
+      })
       .catch((e) => setRewardsError(e.message ?? "보상 목록을 불러오지 못했습니다"))
       .finally(() => setRewardsLoading(false));
   }, [contentCode]);
@@ -506,8 +530,9 @@ const ManageContent: React.FC = () => {
       const created = await createManageReward({
         contentCode,
         name: addForm.name,
-        weight: addForm.weight,
-        stock: addForm.unlimited ? undefined : addForm.stock,
+        ...(drawMode === "WEIGHTED"
+          ? { weight: addForm.weight, stock: addForm.unlimited ? undefined : addForm.stock }
+          : { poolCount: addForm.poolCount }),
         description: addForm.description || undefined,
         imageUrl: addForm.imageUrl || undefined,
         allowDuplicateReward: addForm.allowDuplicateReward,
@@ -530,8 +555,9 @@ const ManageContent: React.FC = () => {
     try {
       const updated = await updateManageReward(editingRewardId, {
         name: editRewardForm.name,
-        weight: editRewardForm.weight,
-        stock: editRewardForm.unlimited ? undefined : editRewardForm.stock,
+        ...(drawMode === "WEIGHTED"
+          ? { weight: editRewardForm.weight, stock: editRewardForm.unlimited ? undefined : editRewardForm.stock }
+          : { poolCount: editRewardForm.poolCount }),
         description: editRewardForm.description || undefined,
         imageUrl: editRewardForm.imageUrl || undefined,
         allowDuplicateReward: editRewardForm.allowDuplicateReward,
@@ -758,6 +784,7 @@ const ManageContent: React.FC = () => {
 
         {/* ── Rewards ── */}
         <TabsContent value="rewards">
+          <div className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base">보상 목록</CardTitle>
@@ -768,6 +795,7 @@ const ManageContent: React.FC = () => {
               )}
             </CardHeader>
             <CardContent className="space-y-3 pt-2">
+              <DrawModeTabs value={drawMode} onChange={setDrawMode} />
               {showAddForm && (
                 <RewardFormCard
                   formId="new"
@@ -778,6 +806,7 @@ const ManageContent: React.FC = () => {
                   onCancel={() => { setShowAddForm(false); setAddError(null); }}
                   saving={adding}
                   error={addError}
+                  mode={drawMode}
                 />
               )}
               {rewardsLoading && (
@@ -801,6 +830,7 @@ const ManageContent: React.FC = () => {
                     onCancel={() => { setEditingRewardId(null); setEditRewardError(null); }}
                     saving={editingReward}
                     error={editRewardError}
+                    mode={drawMode}
                   />
                 ) : (
                   <div key={r.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
@@ -817,7 +847,12 @@ const ManageContent: React.FC = () => {
                         {!r.active && <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">비활성</Badge>}
                       </div>
                       <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground flex-wrap">
-                        <span>가중치 <span className="font-medium text-foreground">{r.weight}</span></span>
+                        {r.weight !== null && (
+                          <span>가중치 <span className="font-medium text-foreground">{r.weight}</span></span>
+                        )}
+                        {r.poolCount !== null && (
+                          <span>개수 <span className="font-medium text-foreground">{r.poolCount}</span></span>
+                        )}
                         <span>재고 <span className="font-medium text-foreground">{r.stock == null ? "무제한" : `${r.stock}개`}</span></span>
                         {r.allowDuplicateReward && <Badge variant="outline" className="text-[10px] px-1.5 py-0">중복허용</Badge>}
                       </div>
@@ -835,6 +870,7 @@ const ManageContent: React.FC = () => {
               )}
             </CardContent>
           </Card>
+          </div>
         </TabsContent>
 
         {/* ── Codes ── */}

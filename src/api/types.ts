@@ -42,9 +42,10 @@ export interface RewardResponse {
   id: number;
   name: string;
   description: string;
-  weight: number;
+  weight: number | null;
+  poolCount: number | null;
   probability: number;
-  stock: number;
+  stock: number | null;
   unlimited: boolean;
   imageUrl?: string;
 }
@@ -131,8 +132,10 @@ export interface ManageRewardResponse {
   contentCode: string;
   name: string;
   description?: string;
-  weight: number;
-  stock?: number;
+  weight: number | null;
+  poolCount: number | null;
+  probability: number;
+  stock: number | null;
   unlimited: boolean;
   imageUrl?: string;
   active: boolean;
@@ -142,11 +145,13 @@ export interface ManageRewardResponse {
 }
 
 // POST /api/manage/rewards
+// weight 또는 poolCount 중 하나만 포함해야 합니다. poolCount 사용 시 stock 불가.
 export interface RewardCreateRequest {
   contentCode: string;
   name: string;
   description?: string;
-  weight: number;
+  weight?: number;
+  poolCount?: number;
   stock?: number;
   imageUrl?: string;
   allowDuplicateReward?: boolean;
@@ -154,10 +159,12 @@ export interface RewardCreateRequest {
 }
 
 // PUT /api/manage/rewards/{rewardId}
+// weight 또는 poolCount 중 하나만 포함해야 합니다. poolCount 사용 시 stock 불가.
 export interface RewardUpdateRequest {
   name: string;
   description?: string;
-  weight: number;
+  weight?: number;
+  poolCount?: number;
   stock?: number;
   imageUrl?: string;
   allowDuplicateReward?: boolean;

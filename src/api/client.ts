@@ -45,7 +45,8 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    throw new ApiError(res.status, `요청 실패 (${res.status})`);
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.message ?? `요청 실패 (${res.status})`);
   }
 
   const json: ApiResponse<T> = await res.json();
@@ -100,7 +101,8 @@ async function authRequest<T>(url: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    throw new ApiError(res.status, `요청 실패 (${res.status})`);
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.message ?? `요청 실패 (${res.status})`);
   }
 
   const json: ApiResponse<T> = await res.json();

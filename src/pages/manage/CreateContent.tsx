@@ -8,10 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { StateToggleButton } from "@/components/ui/state-toggle-button";
-import { Trash2, Plus, Shuffle, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
+import { Trash2, Plus, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
 import { createManageContent, createManageReward, createManageInvitationCode } from "@/api/client";
 import { generateCode } from "@/lib/utils";
 import type { ContentType } from "@/data/manageMockData";
+import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
 
 const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string; disabled?: boolean }[] = [
   { value: "draw", label: "뽑기", icon: <Gift className="h-7 w-7" />, desc: "보상을 설정하고 참여자가 뽑기" },
@@ -23,6 +24,7 @@ interface RewardRow {
   id: number;
   name: string;
   weight: number;
+  poolCount: number;
   stock: number;
   imageUrl: string;
   unlimited: boolean;
@@ -32,8 +34,8 @@ interface RewardRow {
 interface CodeRow { id: number; code: string; name: string; allowedDrawCount: number }
 
 const initialRewards: RewardRow[] = [
-  { id: 1, name: "교환권", weight: 10, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: true, active: true },
-  { id: 2, name: "꽝", weight: 60, stock: null, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true },
+  { id: 1, name: "교환권", weight: 10, poolCount: 5, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: true, active: true },
+  { id: 2, name: "꽝", weight: 60, poolCount: 5, stock: 0, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true },
 ];
 
 const initialCodes: CodeRow[] = [];
@@ -48,12 +50,13 @@ const CreateContent: React.FC = () => {
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
   const [rewards, setRewards] = useState<RewardRow[]>(initialRewards);
+  const [drawMode, setDrawMode] = useState<DrawMode>("WEIGHTED");
   const [codes, setCodes] = useState<CodeRow[]>(initialCodes);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const addReward = () =>
-    setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, stock: 10, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true }]);
+    setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, poolCount: 5, stock: 10, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true }]);
   const removeReward = (id: number) => setRewards((r) => r.filter((x) => x.id !== id));
   const updateReward = (id: number, field: keyof RewardRow, value: string | number | boolean) =>
     setRewards((r) => r.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
@@ -87,8 +90,9 @@ const CreateContent: React.FC = () => {
           createManageReward({
             contentCode: created.code,
             name: r.name,
-            weight: r.weight,
-            stock: r.unlimited ? undefined : r.stock,
+            ...(drawMode === "WEIGHTED"
+              ? { weight: r.weight, stock: r.unlimited ? undefined : r.stock }
+              : { poolCount: r.poolCount }),
             imageUrl: r.imageUrl || undefined,
             allowDuplicateReward: r.allowDuplicateReward,
             active: r.active,
@@ -196,6 +200,7 @@ const CreateContent: React.FC = () => {
               <CardTitle className="text-lg">보상 설정</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <DrawModeTabs value={drawMode} onChange={setDrawMode} />
               {rewards.map((r, idx) => (
                 <Card key={r.id} className="border border-border bg-muted/30">
                   <CardContent className="p-3 space-y-3">
@@ -219,41 +224,56 @@ const CreateContent: React.FC = () => {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {drawMode === "WEIGHTED" ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5 pl-1">
+                            <Label className="text-sm">가중치</Label>
+                            <span className="text-[11px] text-muted-foreground">당첨 확률 비율</span>
+                          </div>
+                          <Input
+                            type="number"
+                            placeholder="가중치"
+                            value={r.weight}
+                            onChange={(e) => updateReward(r.id, "weight", Number(e.target.value))}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5 pl-1">
+                            <Label className="text-sm">수량</Label>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <StateToggleButton
+                              checked={r.unlimited}
+                              onCheckedChange={(v) => updateReward(r.id, "unlimited", v)}
+                              checkedLabel="무제한"
+                              uncheckedLabel="개수 지정"
+                            />
+                            <Input
+                              type="number"
+                              placeholder="수량"
+                              value={r.stock}
+                              onChange={(e) => updateReward(r.id, "stock", Number(e.target.value))}
+                              disabled={r.unlimited}
+                              className={`flex-1 ${r.unlimited ? "opacity-50" : ""}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-1.5 pl-1">
-                          <Label className="text-sm">가중치</Label>
-                          <span className="text-[11px] text-muted-foreground">당첨 확률 비율</span>
+                          <Label className="text-sm">개수</Label>
+                          <span className="text-[11px] text-muted-foreground">당첨 가능한 제비 수</span>
                         </div>
                         <Input
                           type="number"
-                          placeholder="가중치"
-                          value={r.weight}
-                          onChange={(e) => updateReward(r.id, "weight", Number(e.target.value))}
+                          placeholder="5"
+                          value={r.poolCount}
+                          onChange={(e) => updateReward(r.id, "poolCount", Number(e.target.value))}
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-1.5 pl-1">
-                          <Label className="text-sm">수량</Label>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <StateToggleButton
-                            checked={r.unlimited}
-                            onCheckedChange={(v) => updateReward(r.id, "unlimited", v)}
-                            checkedLabel="무제한"
-                            uncheckedLabel="개수 지정"
-                          />
-                          <Input
-                            type="number"
-                            placeholder="수량"
-                            value={r.stock}
-                            onChange={(e) => updateReward(r.id, "stock", Number(e.target.value))}
-                            disabled={r.unlimited}
-                            className={`flex-1 ${r.unlimited ? "opacity-50" : ""}`}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    )}
 
                     <div className="space-y-1.5">
                       <Label className="text-sm pl-1">이미지 URL</Label>
