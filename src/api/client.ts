@@ -104,6 +104,10 @@ async function authRequest<T>(url: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
+    if (res.status === 401 && body?.code === "TOKEN_EXPIRED") {
+      // 토큰 만료 시에만 signOut. SIGNED_OUT 이벤트 → ProtectedRoute가 /manage/login으로 리다이렉트.
+      await supabase.auth.signOut();
+    }
     throw new ApiError(res.status, body?.message ?? `요청 실패 (${res.status})`);
   }
 
