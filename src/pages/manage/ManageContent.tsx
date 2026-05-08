@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { generateCode } from "@/lib/utils";
 import { getContentTypeLabel } from "@/lib/contentTypeConstants";
 import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
+import ModeChangeWarningModal from "@/components/manage/ModeChangeWarningModal";
 import {
   getManageContentDetail,
   updateManageContent,
@@ -29,6 +30,8 @@ import {
   createManageReward,
   updateManageReward,
   deleteManageReward,
+  updateManageRewards,
+  deleteAllManageRewardsByContent,
   getManageInvitationCodesByContent,
   createManageInvitationCode,
   updateManageInvitationCode,
@@ -324,6 +327,10 @@ const ManageContent: React.FC = () => {
   const [rewardsError, setRewardsError] = useState<string | null>(null);
   const [drawMode, setDrawMode] = useState<DrawMode>("WEIGHTED");
 
+  // Mode change modal
+  const [modeChangeNextMode, setModeChangeNextMode] = useState<DrawMode | null>(null);
+  const [modeChanging, setModeChanging] = useState(false);
+
   // Add reward form
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState<RewardFormState>(emptyForm());
@@ -582,6 +589,55 @@ const ManageContent: React.FC = () => {
     }
   };
 
+  const handleDrawModeChange = (next: DrawMode) => {
+    if (next === drawMode) return;
+    if (rewards.length === 0) {
+      setDrawMode(next);
+      return;
+    }
+    setModeChangeNextMode(next);
+  };
+
+  const handleModeChangeConvert = async () => {
+    if (!modeChangeNextMode) return;
+    setModeChanging(true);
+    try {
+      const updated = await updateManageRewards({
+        rewards: rewards.map((r) => ({
+          rewardId: r.id,
+          name: r.name,
+          description: r.description,
+          imageUrl: r.imageUrl,
+          allowDuplicateReward: r.allowDuplicateReward,
+          active: r.active,
+          ...(modeChangeNextMode === "WEIGHTED" ? { weight: 1 } : { poolCount: 1 }),
+        })),
+      });
+      setRewards(updated);
+      setDrawMode(modeChangeNextMode);
+      setModeChangeNextMode(null);
+    } catch (e: any) {
+      alert(e.message ?? "변환에 실패했습니다");
+    } finally {
+      setModeChanging(false);
+    }
+  };
+
+  const handleModeChangeReset = async () => {
+    if (!contentCode || !modeChangeNextMode) return;
+    setModeChanging(true);
+    try {
+      await deleteAllManageRewardsByContent(contentCode);
+      setRewards([]);
+      setDrawMode(modeChangeNextMode);
+      setModeChangeNextMode(null);
+    } catch (e: any) {
+      alert(e.message ?? "초기화에 실패했습니다");
+    } finally {
+      setModeChanging(false);
+    }
+  };
+
   const handleAddCode = async () => {
     if (!contentCode) return;
     setAddingCode(true);
@@ -658,6 +714,7 @@ const ManageContent: React.FC = () => {
   }
 
   return (
+    <>
     <ManageLayout>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -795,7 +852,7 @@ const ManageContent: React.FC = () => {
               )}
             </CardHeader>
             <CardContent className="space-y-3 pt-2">
-              <DrawModeTabs value={drawMode} onChange={setDrawMode} />
+              <DrawModeTabs value={drawMode} onChange={handleDrawModeChange} />
               {showAddForm && (
                 <RewardFormCard
                   formId="new"
@@ -1247,6 +1304,17 @@ const ManageContent: React.FC = () => {
         </TabsContent>
       </Tabs>
     </ManageLayout>
+
+    <ModeChangeWarningModal
+      open={modeChangeNextMode !== null}
+      currentMode={drawMode}
+      nextMode={modeChangeNextMode}
+      onClose={() => setModeChangeNextMode(null)}
+      onConvertClick={handleModeChangeConvert}
+      onResetClick={handleModeChangeReset}
+      loading={modeChanging}
+    />
+    </>
   );
 };
 
