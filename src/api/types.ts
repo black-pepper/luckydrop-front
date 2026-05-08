@@ -171,6 +171,29 @@ export interface RewardUpdateRequest {
   active: boolean;
 }
 
+// POST /api/manage/rewards/batch
+export interface RewardBatchCreateRequest {
+  contentCode: string;
+  rewards: RewardUpdateRequest[];
+}
+
+// PUT /api/manage/rewards/batch
+export interface RewardBatchUpdateItem {
+  rewardId: number;
+  name: string;
+  description?: string;
+  weight?: number;
+  poolCount?: number;
+  stock?: number;
+  imageUrl?: string;
+  allowDuplicateReward?: boolean;
+  active: boolean;
+}
+
+export interface RewardBatchUpdateRequest {
+  rewards: RewardBatchUpdateItem[];
+}
+
 // Manage invitation code (추첨 코드) types
 // GET /api/manage/invitation-codes?contentCode={contentCode}
 // GET /api/manage/invitation-codes/{invitationCodeId}

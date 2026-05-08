@@ -16,6 +16,8 @@ import type {
   ManageRewardResponse,
   RewardCreateRequest,
   RewardUpdateRequest,
+  RewardBatchCreateRequest,
+  RewardBatchUpdateRequest,
   ManageInvitationCodeResponse,
   InvitationCodeCreateRequest,
   InvitationCodeUpdateRequest,
@@ -219,6 +221,31 @@ export async function updateManageReward(
 
 export async function deleteManageReward(rewardId: number): Promise<void> {
   return authRequest<void>(`/api/manage/rewards/${rewardId}`, { method: "DELETE" });
+}
+
+export async function createManageRewards(
+  payload: RewardBatchCreateRequest
+): Promise<ManageRewardResponse[]> {
+  return authRequest<ManageRewardResponse[]>("/api/manage/rewards/batch", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateManageRewards(
+  payload: RewardBatchUpdateRequest
+): Promise<ManageRewardResponse[]> {
+  return authRequest<ManageRewardResponse[]>("/api/manage/rewards/batch", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAllManageRewardsByContent(contentCode: string): Promise<void> {
+  return authRequest<void>(
+    `/api/manage/rewards/batch?contentCode=${encodeURIComponent(contentCode)}`,
+    { method: "DELETE" }
+  );
 }
 
 // ── Manage Invitation Code API (추첨 코드) ─────────────────────────────────
