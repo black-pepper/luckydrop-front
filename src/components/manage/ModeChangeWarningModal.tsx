@@ -64,15 +64,23 @@ const ModeChangeWarningModal: React.FC<ModeChangeWarningModalProps> = ({
         </div>
 
         <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
-            취소
-          </Button>
-          <Button variant="outline" size="sm" onClick={onConvertClick} disabled={loading} className="w-full sm:w-auto">
-            {loading ? "처리 중..." : "변환해서 유지"}
-          </Button>
-          <Button size="sm" onClick={onResetClick} disabled={loading} className="w-full sm:w-auto">
-            {loading ? "처리 중..." : "초기화하고 변경"}
-          </Button>
+          {loading ? (
+            <p className="w-full text-center text-sm font-medium text-muted-foreground">
+              처리 중...
+            </p>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" onClick={onClose} className="w-full sm:w-auto">
+                취소
+              </Button>
+              <Button variant="outline" size="sm" onClick={onConvertClick} className="w-full sm:w-auto">
+                변환해서 유지
+              </Button>
+              <Button size="sm" onClick={onResetClick} className="w-full sm:w-auto">
+                초기화하고 변경
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
