@@ -128,7 +128,6 @@ const ManageLogin: React.FC = () => {
     <div className="flex items-center justify-center min-h-screen px-4 bg-manage-bg">
       <Card className="w-full max-w-sm text-center shadow-lg">
         <CardContent className="p-8 space-y-6">
-          <div className="text-4xl">🎯</div>
           <h1 className="text-2xl font-bold text-foreground">LuckyDrop</h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
             이벤트를 만들고 공유해보세요.<br />

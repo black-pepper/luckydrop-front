@@ -44,7 +44,7 @@ const ManageLayout: React.FC<Props> = ({ children }) => {
         onClick={onNavigate}
         className="text-lg font-bold px-3 py-4 tracking-tight"
       >
-        🎯 LuckyDrop
+        LuckyDrop
       </Link>
 
       <nav className="flex flex-col gap-1 mt-2 flex-1">
@@ -109,7 +109,7 @@ const ManageLayout: React.FC<Props> = ({ children }) => {
             <SidebarNav onNavigate={() => setMobileOpen(false)} />
           </SheetContent>
         </Sheet>
-        <Link to="/manage" className="font-bold text-base">🎯 LuckyDrop</Link>
+        <Link to="/manage" className="font-bold text-base">LuckyDrop</Link>
       </div>
 
       {/* Main content */}

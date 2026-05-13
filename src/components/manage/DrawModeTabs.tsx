@@ -7,7 +7,7 @@ export type DrawMode = "WEIGHTED" | "DRAW" | "CUSTOM";
 export const drawModeMeta: Record<DrawMode, { label: string; desc: string; icon: React.ReactNode }> = {
   WEIGHTED: {
     label: "확률 추첨",
-    desc: "가중치 비율대로 무제한 뽑기",
+    desc: "가중치 비율대로 재고가 소진될 때까지 당첨",
     icon: <Percent className="h-4 w-4" />,
   },
   DRAW: {
