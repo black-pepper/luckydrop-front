@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,7 @@ const LOGIN_CALLBACK_URL =
 
 const ManageLogin: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const navigatedTokenRef = React.useRef<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
@@ -34,7 +35,8 @@ const ManageLogin: React.FC = () => {
       try {
         await getCurrentUser();
         setStatusMessage("로그인에 성공했어요. 관리자 화면으로 이동합니다.");
-        navigate(DEFAULT_REDIRECT_PATH, { replace: true });
+        const redirectTo = (location.state as { redirectTo?: string } | null)?.redirectTo;
+        navigate(redirectTo ?? DEFAULT_REDIRECT_PATH, { replace: true });
       } catch (error) {
         navigatedTokenRef.current = null;
         setStatusMessage(null);
@@ -126,7 +128,6 @@ const ManageLogin: React.FC = () => {
     <div className="flex items-center justify-center min-h-screen px-4 bg-manage-bg">
       <Card className="w-full max-w-sm text-center shadow-lg">
         <CardContent className="p-8 space-y-6">
-          <div className="text-4xl">🎯</div>
           <h1 className="text-2xl font-bold text-foreground">LuckyDrop</h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
             이벤트를 만들고 공유해보세요.<br />

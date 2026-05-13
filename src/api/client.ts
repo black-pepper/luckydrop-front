@@ -16,6 +16,8 @@ import type {
   ManageRewardResponse,
   RewardCreateRequest,
   RewardUpdateRequest,
+  RewardBatchCreateRequest,
+  RewardBatchUpdateRequest,
   ManageInvitationCodeResponse,
   InvitationCodeCreateRequest,
   InvitationCodeUpdateRequest,
@@ -45,7 +47,8 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    throw new ApiError(res.status, `요청 실패 (${res.status})`);
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.message ?? `요청 실패 (${res.status})`);
   }
 
   const json: ApiResponse<T> = await res.json();
@@ -100,7 +103,12 @@ async function authRequest<T>(url: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    throw new ApiError(res.status, `요청 실패 (${res.status})`);
+    const body = await res.json().catch(() => null);
+    if (res.status === 401 && body?.code === "TOKEN_EXPIRED") {
+      // 토큰 만료 시에만 signOut. SIGNED_OUT 이벤트 → ProtectedRoute가 /manage/login으로 리다이렉트.
+      await supabase.auth.signOut();
+    }
+    throw new ApiError(res.status, body?.message ?? `요청 실패 (${res.status})`);
   }
 
   const json: ApiResponse<T> = await res.json();
@@ -217,6 +225,31 @@ export async function updateManageReward(
 
 export async function deleteManageReward(rewardId: number): Promise<void> {
   return authRequest<void>(`/api/manage/rewards/${rewardId}`, { method: "DELETE" });
+}
+
+export async function createManageRewards(
+  payload: RewardBatchCreateRequest
+): Promise<ManageRewardResponse[]> {
+  return authRequest<ManageRewardResponse[]>("/api/manage/rewards/batch", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateManageRewards(
+  payload: RewardBatchUpdateRequest
+): Promise<ManageRewardResponse[]> {
+  return authRequest<ManageRewardResponse[]>("/api/manage/rewards/batch", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAllManageRewardsByContent(contentCode: string): Promise<void> {
+  return authRequest<void>(
+    `/api/manage/rewards/batch?contentCode=${encodeURIComponent(contentCode)}`,
+    { method: "DELETE" }
+  );
 }
 
 // ── Manage Invitation Code API (추첨 코드) ─────────────────────────────────

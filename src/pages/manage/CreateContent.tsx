@@ -8,10 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { StateToggleButton } from "@/components/ui/state-toggle-button";
-import { Trash2, Plus, Shuffle, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
-import { createManageContent, createManageReward, createManageInvitationCode } from "@/api/client";
+import { Trash2, Plus, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
+import { createManageContent, createManageRewards, createManageInvitationCode } from "@/api/client";
 import { generateCode } from "@/lib/utils";
 import type { ContentType } from "@/data/manageMockData";
+import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
 
 const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string; disabled?: boolean }[] = [
   { value: "draw", label: "뽑기", icon: <Gift className="h-7 w-7" />, desc: "보상을 설정하고 참여자가 뽑기" },
@@ -23,6 +24,7 @@ interface RewardRow {
   id: number;
   name: string;
   weight: number;
+  poolCount: number;
   stock: number;
   imageUrl: string;
   unlimited: boolean;
@@ -30,10 +32,11 @@ interface RewardRow {
   active: boolean;
 }
 interface CodeRow { id: number; code: string; name: string; allowedDrawCount: number }
+type ValidationErrors = Record<string, string>;
 
 const initialRewards: RewardRow[] = [
-  { id: 1, name: "교환권", weight: 10, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: true, active: true },
-  { id: 2, name: "꽝", weight: 60, stock: null, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true },
+  { id: 1, name: "교환권", weight: 10, poolCount: 5, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: true, active: true },
+  { id: 2, name: "꽝", weight: 60, poolCount: 5, stock: 0, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true },
 ];
 
 const initialCodes: CodeRow[] = [];
@@ -48,29 +51,109 @@ const CreateContent: React.FC = () => {
   const [startAt, setStartAt] = useState("");
   const [endAt, setEndAt] = useState("");
   const [rewards, setRewards] = useState<RewardRow[]>(initialRewards);
+  const [drawMode, setDrawMode] = useState<DrawMode>("WEIGHTED");
   const [codes, setCodes] = useState<CodeRow[]>(initialCodes);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+
+  const clearFieldError = (field: string) => {
+    setValidationErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
 
   const addReward = () =>
-    setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, stock: 10, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true }]);
+    setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, poolCount: 5, stock: 10, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true }]);
   const removeReward = (id: number) => setRewards((r) => r.filter((x) => x.id !== id));
-  const updateReward = (id: number, field: keyof RewardRow, value: string | number | boolean) =>
+  const updateReward = (id: number, field: keyof RewardRow, value: string | number | boolean) => {
+    clearFieldError(`rewards.${id}.${field}`);
     setRewards((r) => r.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
+  };
 
   const addCode = () => setCodes((c) => [...c, { id: Date.now(), code: generateCode(), name: "", allowedDrawCount: 1 }]);
   const removeCode = (id: number) => setCodes((c) => c.filter((x) => x.id !== id));
-  const updateCode = (id: number, field: keyof CodeRow, value: string | number) =>
+  const updateCode = (id: number, field: keyof CodeRow, value: string | number) => {
+    clearFieldError(`codes.${id}.${field}`);
     setCodes((c) => c.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
+  };
 
-  const canNext = () => {
-    if (step === 1) return !!contentType;
-    if (step === 2) return title.trim().length > 0;
-    if (step === 4) return codes.every((c) => c.code.trim().length > 0 && c.name.trim().length > 0);
-    return true;
+  const validateStep = (targetStep: number) => {
+    const errors: ValidationErrors = {};
+
+    if (targetStep === 1 && !contentType) {
+      errors.contentType = "콘텐츠 유형을 선택해주세요.";
+    }
+
+    if (targetStep === 2 && title.trim().length === 0) {
+      errors.title = "제목을 입력해주세요.";
+    }
+
+    if (targetStep === 3) {
+      rewards.forEach((reward) => {
+        if (reward.name.trim().length === 0) {
+          errors[`rewards.${reward.id}.name`] = "보상 이름을 입력해주세요.";
+        }
+
+        if (drawMode === "WEIGHTED") {
+          if (reward.weight <= 0) {
+            errors[`rewards.${reward.id}.weight`] = "가중치는 1 이상이어야 합니다.";
+          }
+
+          if (!reward.unlimited && reward.stock <= 0) {
+            errors[`rewards.${reward.id}.stock`] = "수량은 1 이상이어야 합니다.";
+          }
+        } else if (reward.poolCount <= 0) {
+          errors[`rewards.${reward.id}.poolCount`] = "개수는 1 이상이어야 합니다.";
+        }
+      });
+    }
+
+    if (targetStep === 4) {
+      codes.forEach((code) => {
+        if (code.code.trim().length === 0) {
+          errors[`codes.${code.id}.code`] = "코드를 입력해주세요.";
+        }
+
+        if (code.name.trim().length === 0) {
+          errors[`codes.${code.id}.name`] = "참여자 이름을 입력해주세요.";
+        }
+
+        if (code.allowedDrawCount <= 0) {
+          errors[`codes.${code.id}.allowedDrawCount`] = "허용 횟수는 1 이상이어야 합니다.";
+        }
+      });
+    }
+
+    return errors;
+  };
+
+  const handleNext = () => {
+    const errors = validateStep(step);
+    setValidationErrors(errors);
+    if (Object.keys(errors).length === 0) {
+      setStep((s) => s + 1);
+    }
   };
 
   const handleSubmit = async () => {
+    const step2Errors = validateStep(2);
+    const step3Errors = validateStep(3);
+    const step4Errors = validateStep(4);
+    const mergedErrors = { ...step2Errors, ...step3Errors, ...step4Errors };
+
+    setValidationErrors(mergedErrors);
+
+    if (Object.keys(mergedErrors).length > 0) {
+      if (Object.keys(step2Errors).length > 0) setStep(2);
+      else if (Object.keys(step3Errors).length > 0) setStep(3);
+      else if (Object.keys(step4Errors).length > 0) setStep(4);
+      return;
+    }
+
     if (!contentType) return;
     setSubmitting(true);
     setSubmitError(null);
@@ -82,19 +165,18 @@ const CreateContent: React.FC = () => {
         startAt: startAt ? new Date(startAt).toISOString() : undefined,
         endAt: endAt ? new Date(endAt).toISOString() : undefined,
       });
-      await Promise.all(
-        rewards.map((r) =>
-          createManageReward({
-            contentCode: created.code,
-            name: r.name,
-            weight: r.weight,
-            stock: r.unlimited ? undefined : r.stock,
-            imageUrl: r.imageUrl || undefined,
-            allowDuplicateReward: r.allowDuplicateReward,
-            active: r.active,
-          })
-        )
-      );
+      await createManageRewards({
+        contentCode: created.code,
+        rewards: rewards.map((r) => ({
+          name: r.name,
+          ...(drawMode === "WEIGHTED"
+            ? { weight: r.weight, stock: r.unlimited ? undefined : r.stock }
+            : { poolCount: r.poolCount }),
+          imageUrl: r.imageUrl || undefined,
+          allowDuplicateReward: r.allowDuplicateReward,
+          active: r.active,
+        })),
+      });
       await Promise.all(
         codes
           .filter((c) => c.code.trim().length > 0)
@@ -128,6 +210,9 @@ const CreateContent: React.FC = () => {
           ))}
         </div>
         <p className="text-xs text-muted-foreground mt-1">단계 {step} / 4</p>
+        {step === 1 && validationErrors.contentType && (
+          <p className="text-sm text-destructive mt-2">{validationErrors.contentType}</p>
+        )}
       </div>
 
       {/* Step 1: Type */}
@@ -137,7 +222,10 @@ const CreateContent: React.FC = () => {
             <Card
               key={opt.value}
               className={`w-64 transition-shadow cursor-pointer hover:shadow-md ${contentType === opt.value ? "ring-2 ring-primary" : ""}`}
-              onClick={() => setContentType(opt.value)}
+              onClick={() => {
+                setContentType(opt.value);
+                clearFieldError("contentType");
+              }}
             >
               <CardContent className="flex flex-col items-center gap-2 p-6 text-center">
                 <div className="text-primary">{opt.icon}</div>
@@ -155,8 +243,17 @@ const CreateContent: React.FC = () => {
           <CardHeader><CardTitle className="text-lg">기본 정보</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label>제목</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="이벤트 제목을 입력하세요" />
+              <Label>제목 <span className="text-destructive">*</span></Label>
+              <Input
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  clearFieldError("title");
+                }}
+                placeholder="이벤트 제목을 입력하세요"
+                className={validationErrors.title ? "border-destructive focus-visible:ring-destructive" : ""}
+              />
+              {validationErrors.title && <p className="text-sm text-destructive">{validationErrors.title}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>설명 <span className="text-muted-foreground text-xs">(선택)</span></Label>
@@ -196,6 +293,7 @@ const CreateContent: React.FC = () => {
               <CardTitle className="text-lg">보상 설정</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <DrawModeTabs value={drawMode} onChange={setDrawMode} />
               {rewards.map((r, idx) => (
                 <Card key={r.id} className="border border-border bg-muted/30">
                   <CardContent className="p-3 space-y-3">
@@ -211,52 +309,82 @@ const CreateContent: React.FC = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-sm pl-1">보상 이름</Label>
+                      <Label className="text-sm pl-1">보상 이름 <span className="text-destructive">*</span></Label>
                       <Input
                         placeholder="예: 000 교환권"
                         value={r.name}
                         onChange={(e) => updateReward(r.id, "name", e.target.value)}
+                        className={validationErrors[`rewards.${r.id}.name`] ? "border-destructive focus-visible:ring-destructive" : ""}
                       />
+                      {validationErrors[`rewards.${r.id}.name`] && (
+                        <p className="text-sm text-destructive">{validationErrors[`rewards.${r.id}.name`]}</p>
+                      )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {drawMode === "WEIGHTED" ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5 pl-1">
+                            <Label className="text-sm">가중치</Label>
+                            <span className="text-[11px] text-muted-foreground">당첨 확률 비율</span>
+                          </div>
+                          <Input
+                            type="number"
+                            placeholder="가중치"
+                            value={r.weight}
+                            onChange={(e) => updateReward(r.id, "weight", Number(e.target.value))}
+                            className={validationErrors[`rewards.${r.id}.weight`] ? "border-destructive focus-visible:ring-destructive" : ""}
+                          />
+                          {validationErrors[`rewards.${r.id}.weight`] && (
+                            <p className="text-sm text-destructive">{validationErrors[`rewards.${r.id}.weight`]}</p>
+                          )}
+                        </div>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5 pl-1">
+                            <Label className="text-sm">수량</Label>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <StateToggleButton
+                              checked={r.unlimited}
+                              onCheckedChange={(v) => updateReward(r.id, "unlimited", v)}
+                              checkedLabel="무제한"
+                              uncheckedLabel="개수 지정"
+                            />
+                            <Input
+                              type="number"
+                              placeholder="수량"
+                              value={r.stock}
+                              onChange={(e) => updateReward(r.id, "stock", Number(e.target.value))}
+                              disabled={r.unlimited}
+                              className={`flex-1 ${r.unlimited ? "opacity-50" : ""} ${validationErrors[`rewards.${r.id}.stock`] ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                            />
+                          </div>
+                          {validationErrors[`rewards.${r.id}.stock`] && (
+                            <p className="text-sm text-destructive">{validationErrors[`rewards.${r.id}.stock`]}</p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-1.5 pl-1">
-                          <Label className="text-sm">가중치</Label>
-                          <span className="text-[11px] text-muted-foreground">당첨 확률 비율</span>
+                          <Label className="text-sm">개수</Label>
+                          <span className="text-[11px] text-muted-foreground">당첨 가능한 제비 수</span>
                         </div>
                         <Input
                           type="number"
-                          placeholder="가중치"
-                          value={r.weight}
-                          onChange={(e) => updateReward(r.id, "weight", Number(e.target.value))}
+                          placeholder="5"
+                          value={r.poolCount}
+                          onChange={(e) => updateReward(r.id, "poolCount", Number(e.target.value))}
+                          className={validationErrors[`rewards.${r.id}.poolCount`] ? "border-destructive focus-visible:ring-destructive" : ""}
                         />
+                        {validationErrors[`rewards.${r.id}.poolCount`] && (
+                          <p className="text-sm text-destructive">{validationErrors[`rewards.${r.id}.poolCount`]}</p>
+                        )}
                       </div>
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-1.5 pl-1">
-                          <Label className="text-sm">수량</Label>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <StateToggleButton
-                            checked={r.unlimited}
-                            onCheckedChange={(v) => updateReward(r.id, "unlimited", v)}
-                            checkedLabel="무제한"
-                            uncheckedLabel="개수 지정"
-                          />
-                          <Input
-                            type="number"
-                            placeholder="수량"
-                            value={r.stock}
-                            onChange={(e) => updateReward(r.id, "stock", Number(e.target.value))}
-                            disabled={r.unlimited}
-                            className={`flex-1 ${r.unlimited ? "opacity-50" : ""}`}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    )}
 
                     <div className="space-y-1.5">
-                      <Label className="text-sm pl-1">이미지 URL</Label>
+                      <Label className="text-sm pl-1">이미지 URL <span className="text-muted-foreground text-xs">(선택)</span></Label>
                       <div className="flex gap-3 items-start">
                         <div className="shrink-0 w-[56px] h-[56px] rounded-md border border-dashed border-border bg-muted flex items-center justify-center overflow-hidden">
                           {r.imageUrl ? (
@@ -311,8 +439,8 @@ const CreateContent: React.FC = () => {
 
             {codes.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                <p className="text-sm">코드를 추가해주세요</p>
-                <p className="text-xs mt-1">아래 버튼으로 직접 추가하거나 자동 생성할 수 있습니다.</p>
+                <p className="text-sm">지금은 코드 없이 생성할 수 있습니다</p>
+                <p className="text-xs mt-1">필요하면 아래 버튼으로 추가하고, 나중에 다시 등록해도 됩니다.</p>
               </div>
             )}
 
@@ -328,9 +456,9 @@ const CreateContent: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label className="text-xs">코드</Label>
+                        <Label className="text-xs">코드 <span className="text-destructive">*</span></Label>
                         <Input
-                          className="font-mono text-sm"
+                          className={`font-mono text-sm ${validationErrors[`codes.${c.id}.code`] ? "border-destructive focus-visible:ring-destructive" : ""}`}
                           placeholder="예: ABC123"
                           value={c.code}
                           onChange={(e) => {
@@ -340,24 +468,33 @@ const CreateContent: React.FC = () => {
                             updateCode(c.id, "code", filteredValue);
                           }}
                         />
+                        {validationErrors[`codes.${c.id}.code`] && (
+                          <p className="text-sm text-destructive">{validationErrors[`codes.${c.id}.code`]}</p>
+                        )}
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">참여자 이름 <span className="text-destructive">*</span></Label>
                         <Input
-                          className="text-sm"
+                          className={`text-sm ${validationErrors[`codes.${c.id}.name`] ? "border-destructive focus-visible:ring-destructive" : ""}`}
                           placeholder="참여자 이름"
                           value={c.name}
                           onChange={(e) => updateCode(c.id, "name", e.target.value)}
                         />
+                        {validationErrors[`codes.${c.id}.name`] && (
+                          <p className="text-sm text-destructive">{validationErrors[`codes.${c.id}.name`]}</p>
+                        )}
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs">허용 횟수</Label>
+                        <Label className="text-xs">허용 횟수 <span className="text-destructive">*</span></Label>
                         <Input
                           type="number"
-                          className="text-sm"
+                          className={`text-sm ${validationErrors[`codes.${c.id}.allowedDrawCount`] ? "border-destructive focus-visible:ring-destructive" : ""}`}
                           value={c.allowedDrawCount}
                           onChange={(e) => updateCode(c.id, "allowedDrawCount", Number(e.target.value))}
                         />
+                        {validationErrors[`codes.${c.id}.allowedDrawCount`] && (
+                          <p className="text-sm text-destructive">{validationErrors[`codes.${c.id}.allowedDrawCount`]}</p>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -384,7 +521,7 @@ const CreateContent: React.FC = () => {
           <ArrowLeft className="h-4 w-4 mr-1" /> 이전
         </Button>
         {step < 4 ? (
-          <Button disabled={!canNext()} onClick={() => setStep((s) => s + 1)}>
+          <Button onClick={handleNext}>
             다음 <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         ) : (
