@@ -66,27 +66,27 @@ const PAGE_SIZE = 20;
 interface InvitationCodeFormState {
   code: string;
   name: string;
-  allowedDrawCount: number;
+  allowedDrawCount: string;
   active: boolean;
 }
 
 const emptyCodeForm = (): InvitationCodeFormState => ({
-  code: "", name: "", allowedDrawCount: 1, active: true,
+  code: "", name: "", allowedDrawCount: "", active: true,
 });
 
 const fromApiCode = (c: ManageInvitationCodeResponse): InvitationCodeFormState => ({
   code: c.code,
   name: c.name ?? "",
-  allowedDrawCount: c.allowedDrawCount,
+  allowedDrawCount: String(c.allowedDrawCount),
   active: c.active,
 });
 
 interface RewardFormState {
   name: string;
   description: string;
-  weight: number;
-  poolCount: number;
-  stock: number;
+  weight: string;
+  poolCount: string;
+  stock: string;
   unlimited: boolean;
   imageUrl: string;
   allowDuplicateReward: boolean;
@@ -94,21 +94,73 @@ interface RewardFormState {
 }
 
 const emptyForm = (): RewardFormState => ({
-  name: "", description: "", weight: 10, poolCount: 5, stock: 10,
+  name: "", description: "", weight: "", poolCount: "", stock: "",
   unlimited: true, imageUrl: "", allowDuplicateReward: true, active: true,
 });
 
 const fromApiReward = (r: ManageRewardResponse): RewardFormState => ({
   name: r.name,
   description: r.description ?? "",
-  weight: r.weight ?? 10,
-  poolCount: r.poolCount ?? 5,
-  stock: r.stock ?? 0,
+  weight: r.weight != null ? String(r.weight) : "",
+  poolCount: r.poolCount != null ? String(r.poolCount) : "",
+  stock: r.stock != null ? String(r.stock) : "",
   unlimited: r.stock == null,
   imageUrl: r.imageUrl ?? "",
   allowDuplicateReward: r.allowDuplicateReward,
   active: r.active,
 });
+
+const isDigitsOnly = (value: string) => /^\d*$/.test(value);
+
+const parsePositiveInteger = (value: string) => {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return { kind: "empty" as const };
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    return { kind: "invalid" as const };
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return { kind: "nonPositive" as const };
+  }
+
+  return { kind: "valid" as const, value: parsed };
+};
+
+const parseNonNegativeInteger = (value: string) => {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return { kind: "empty" as const };
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    return { kind: "invalid" as const };
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    return { kind: "negative" as const };
+  }
+
+  return { kind: "valid" as const, value: parsed };
+};
+
+const getPositiveIntegerError = (value: string, emptyMessage: string, invalidMessage: string) => {
+  const parsed = parsePositiveInteger(value);
+  if (parsed.kind === "empty") return emptyMessage;
+  if (parsed.kind !== "valid") return invalidMessage;
+  return null;
+};
+
+const getNonNegativeIntegerError = (value: string, emptyMessage: string, invalidMessage: string) => {
+  const parsed = parseNonNegativeInteger(value);
+  if (parsed.kind === "empty") return emptyMessage;
+  if (parsed.kind !== "valid") return invalidMessage;
+  return null;
+};
 
 // ── RewardFormCard ──────────────────────────────────────────────────────────
 
@@ -150,7 +202,18 @@ const RewardFormCard: React.FC<{
               <Label className="text-sm">가중치</Label>
               <span className="text-[11px] text-muted-foreground">당첨 확률 비율에 사용되는 값</span>
             </div>
-            <Input type="number" placeholder="10" value={form.weight} onChange={(e) => onChange({ ...form, weight: Number(e.target.value) })} />
+            <Input
+              type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="10"
+              value={form.weight}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (!isDigitsOnly(value)) return;
+                onChange({ ...form, weight: value });
+              }}
+            />
           </div>
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 pl-1">
@@ -166,11 +229,17 @@ const RewardFormCard: React.FC<{
               />
               <Input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="수량"
                 value={form.stock}
                 disabled={form.unlimited}
                 className={`flex-1 ${form.unlimited ? "opacity-50" : ""}`}
-                onChange={(e) => onChange({ ...form, stock: Number(e.target.value) })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (!isDigitsOnly(value)) return;
+                  onChange({ ...form, stock: value });
+                }}
               />
             </div>
           </div>
@@ -183,9 +252,15 @@ const RewardFormCard: React.FC<{
           </div>
           <Input
             type="number"
+            inputMode="numeric"
+            pattern="[0-9]*"
             placeholder="5"
             value={form.poolCount}
-            onChange={(e) => onChange({ ...form, poolCount: Number(e.target.value) })}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (!isDigitsOnly(value)) return;
+              onChange({ ...form, poolCount: value });
+            }}
           />
         </div>
       )}
@@ -282,7 +357,18 @@ const InvitationCodeFormCard: React.FC<{
         </div>
         <div className="space-y-1.5">
           <Label className="text-sm">허용 횟수</Label>
-          <Input type="number" placeholder="1" value={form.allowedDrawCount} onChange={(e) => onChange({ ...form, allowedDrawCount: Number(e.target.value) })} />
+          <Input
+            type="number"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            placeholder="1"
+            value={form.allowedDrawCount}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (!isDigitsOnly(value)) return;
+              onChange({ ...form, allowedDrawCount: value });
+            }}
+          />
         </div>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -531,15 +617,41 @@ const ManageContent: React.FC = () => {
 
   const handleAddReward = async () => {
     if (!contentCode) return;
+    const weightError = getPositiveIntegerError(addForm.weight, "가중치를 입력해주세요.", "가중치는 1 이상의 숫자여야 합니다.");
+    const stockError = getNonNegativeIntegerError(addForm.stock, "수량을 입력해주세요.", "수량은 0 이상의 숫자여야 합니다.");
+    const poolCountError = getNonNegativeIntegerError(addForm.poolCount, "개수를 입력해주세요.", "개수는 0 이상의 숫자여야 합니다.");
+
+    if (drawMode === "WEIGHTED" && weightError) {
+      setAddError(weightError);
+      return;
+    }
+
+    if (drawMode === "WEIGHTED" && !addForm.unlimited && stockError) {
+      setAddError(stockError);
+      return;
+    }
+
+    if (drawMode === "DRAW" && poolCountError) {
+      setAddError(poolCountError);
+      return;
+    }
+
     setAdding(true);
     setAddError(null);
     try {
+      const weight = parsePositiveInteger(addForm.weight);
+      const stock = parseNonNegativeInteger(addForm.stock);
+      const poolCount = parseNonNegativeInteger(addForm.poolCount);
+
       const created = await createManageReward({
         contentCode,
         name: addForm.name,
         ...(drawMode === "WEIGHTED"
-          ? { weight: addForm.weight, stock: addForm.unlimited ? undefined : addForm.stock }
-          : { poolCount: addForm.poolCount }),
+          ? {
+              weight: weight.kind === "valid" ? weight.value : 1,
+              stock: addForm.unlimited ? undefined : stock.kind === "valid" ? stock.value : 0,
+            }
+          : { poolCount: poolCount.kind === "valid" ? poolCount.value : 0 }),
         description: addForm.description || undefined,
         imageUrl: addForm.imageUrl || undefined,
         allowDuplicateReward: addForm.allowDuplicateReward,
@@ -557,14 +669,40 @@ const ManageContent: React.FC = () => {
 
   const handleUpdateReward = async () => {
     if (editingRewardId == null) return;
+    const weightError = getPositiveIntegerError(editRewardForm.weight, "가중치를 입력해주세요.", "가중치는 1 이상의 숫자여야 합니다.");
+    const stockError = getNonNegativeIntegerError(editRewardForm.stock, "수량을 입력해주세요.", "수량은 0 이상의 숫자여야 합니다.");
+    const poolCountError = getNonNegativeIntegerError(editRewardForm.poolCount, "개수를 입력해주세요.", "개수는 0 이상의 숫자여야 합니다.");
+
+    if (drawMode === "WEIGHTED" && weightError) {
+      setEditRewardError(weightError);
+      return;
+    }
+
+    if (drawMode === "WEIGHTED" && !editRewardForm.unlimited && stockError) {
+      setEditRewardError(stockError);
+      return;
+    }
+
+    if (drawMode === "DRAW" && poolCountError) {
+      setEditRewardError(poolCountError);
+      return;
+    }
+
     setEditingReward(true);
     setEditRewardError(null);
     try {
+      const weight = parsePositiveInteger(editRewardForm.weight);
+      const stock = parseNonNegativeInteger(editRewardForm.stock);
+      const poolCount = parseNonNegativeInteger(editRewardForm.poolCount);
+
       const updated = await updateManageReward(editingRewardId, {
         name: editRewardForm.name,
         ...(drawMode === "WEIGHTED"
-          ? { weight: editRewardForm.weight, stock: editRewardForm.unlimited ? undefined : editRewardForm.stock }
-          : { poolCount: editRewardForm.poolCount }),
+          ? {
+              weight: weight.kind === "valid" ? weight.value : 1,
+              stock: editRewardForm.unlimited ? undefined : stock.kind === "valid" ? stock.value : 0,
+            }
+          : { poolCount: poolCount.kind === "valid" ? poolCount.value : 0 }),
         description: editRewardForm.description || undefined,
         imageUrl: editRewardForm.imageUrl || undefined,
         allowDuplicateReward: editRewardForm.allowDuplicateReward,
@@ -640,14 +778,26 @@ const ManageContent: React.FC = () => {
 
   const handleAddCode = async () => {
     if (!contentCode) return;
+    const allowedDrawCountError = getPositiveIntegerError(
+      addCodeForm.allowedDrawCount,
+      "허용 횟수를 입력해주세요.",
+      "허용 횟수는 1 이상의 숫자여야 합니다."
+    );
+    if (allowedDrawCountError) {
+      setAddCodeError(allowedDrawCountError);
+      return;
+    }
+
     setAddingCode(true);
     setAddCodeError(null);
     try {
+      const allowedDrawCount = parsePositiveInteger(addCodeForm.allowedDrawCount);
+
       const created = await createManageInvitationCode({
         contentCode,
         code: addCodeForm.code,
         name: addCodeForm.name || undefined,
-        allowedDrawCount: addCodeForm.allowedDrawCount,
+        allowedDrawCount: allowedDrawCount.kind === "valid" ? allowedDrawCount.value : 1,
         active: true,
       });
       setInviteCodes((prev) => [...prev, created]);
@@ -662,12 +812,24 @@ const ManageContent: React.FC = () => {
 
   const handleUpdateCode = async () => {
     if (editingCodeId == null) return;
+    const allowedDrawCountError = getPositiveIntegerError(
+      editCodeForm.allowedDrawCount,
+      "허용 횟수를 입력해주세요.",
+      "허용 횟수는 1 이상의 숫자여야 합니다."
+    );
+    if (allowedDrawCountError) {
+      setEditCodeError(allowedDrawCountError);
+      return;
+    }
+
     setEditingCode(true);
     setEditCodeError(null);
     try {
+      const allowedDrawCount = parsePositiveInteger(editCodeForm.allowedDrawCount);
+
       const updated = await updateManageInvitationCode(editingCodeId, {
         name: editCodeForm.name || undefined,
-        allowedDrawCount: editCodeForm.allowedDrawCount,
+        allowedDrawCount: allowedDrawCount.kind === "valid" ? allowedDrawCount.value : 1,
         active: editCodeForm.active,
       });
       setInviteCodes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
