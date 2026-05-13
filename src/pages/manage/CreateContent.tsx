@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { StateToggleButton } from "@/components/ui/state-toggle-button";
 import { Trash2, Plus, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
-import { createManageContent, createManageReward, createManageInvitationCode } from "@/api/client";
+import { createManageContent, createManageRewards, createManageInvitationCode } from "@/api/client";
 import { generateCode } from "@/lib/utils";
 import type { ContentType } from "@/data/manageMockData";
 import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
@@ -85,20 +85,18 @@ const CreateContent: React.FC = () => {
         startAt: startAt ? new Date(startAt).toISOString() : undefined,
         endAt: endAt ? new Date(endAt).toISOString() : undefined,
       });
-      await Promise.all(
-        rewards.map((r) =>
-          createManageReward({
-            contentCode: created.code,
-            name: r.name,
-            ...(drawMode === "WEIGHTED"
-              ? { weight: r.weight, stock: r.unlimited ? undefined : r.stock }
-              : { poolCount: r.poolCount }),
-            imageUrl: r.imageUrl || undefined,
-            allowDuplicateReward: r.allowDuplicateReward,
-            active: r.active,
-          })
-        )
-      );
+      await createManageRewards({
+        contentCode: created.code,
+        rewards: rewards.map((r) => ({
+          name: r.name,
+          ...(drawMode === "WEIGHTED"
+            ? { weight: r.weight, stock: r.unlimited ? undefined : r.stock }
+            : { poolCount: r.poolCount }),
+          imageUrl: r.imageUrl || undefined,
+          allowDuplicateReward: r.allowDuplicateReward,
+          active: r.active,
+        })),
+      });
       await Promise.all(
         codes
           .filter((c) => c.code.trim().length > 0)
