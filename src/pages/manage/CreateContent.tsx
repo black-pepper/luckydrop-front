@@ -165,18 +165,20 @@ const CreateContent: React.FC = () => {
         startAt: startAt ? new Date(startAt).toISOString() : undefined,
         endAt: endAt ? new Date(endAt).toISOString() : undefined,
       });
-      await createManageRewards({
-        contentCode: created.code,
-        rewards: rewards.map((r) => ({
-          name: r.name,
-          ...(drawMode === "WEIGHTED"
-            ? { weight: r.weight, stock: r.unlimited ? undefined : r.stock }
-            : { poolCount: r.poolCount }),
-          imageUrl: r.imageUrl || undefined,
-          allowDuplicateReward: r.allowDuplicateReward,
-          active: r.active,
-        })),
-      });
+      if (rewards.length > 0) {
+        await createManageRewards({
+          contentCode: created.code,
+          rewards: rewards.map((r) => ({
+            name: r.name,
+            ...(drawMode === "WEIGHTED"
+              ? { weight: r.weight, stock: r.unlimited ? undefined : r.stock }
+              : { poolCount: r.poolCount }),
+            imageUrl: r.imageUrl || undefined,
+            allowDuplicateReward: r.allowDuplicateReward,
+            active: r.active,
+          })),
+        });
+      }
       await Promise.all(
         codes
           .filter(
@@ -299,6 +301,12 @@ const CreateContent: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <DrawModeTabs value={drawMode} onChange={setDrawMode} />
+              {rewards.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">보상 없이 생성할 수 있습니다</p>
+                  <p className="text-xs mt-1">필요하면 아래 버튼으로 추가하고, 나중에 다시 등록해도 됩니다.</p>
+                </div>
+              )}
               {rewards.map((r, idx) => (
                 <Card key={r.id} className="border border-border bg-muted/30">
                   <CardContent className="p-3 space-y-3">
@@ -444,7 +452,7 @@ const CreateContent: React.FC = () => {
 
             {codes.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                <p className="text-sm">지금은 코드 없이 생성할 수 있습니다</p>
+                <p className="text-sm">코드 없이 생성할 수 있습니다</p>
                 <p className="text-xs mt-1">필요하면 아래 버튼으로 추가하고, 나중에 다시 등록해도 됩니다.</p>
               </div>
             )}
