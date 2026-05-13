@@ -179,12 +179,17 @@ const CreateContent: React.FC = () => {
       });
       await Promise.all(
         codes
-          .filter((c) => c.code.trim().length > 0)
+          .filter(
+            (c) =>
+              c.code.trim().length > 0 &&
+              c.name.trim().length > 0 &&
+              c.allowedDrawCount > 0
+          )
           .map((c) =>
             createManageInvitationCode({
               contentCode: created.code,
               code: c.code.trim(),
-              name: c.name || undefined,
+              name: c.name.trim(),
               allowedDrawCount: c.allowedDrawCount,
               active: true,
             })
