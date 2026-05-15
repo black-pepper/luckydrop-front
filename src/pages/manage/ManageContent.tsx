@@ -20,7 +20,7 @@ import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save, Calen
 import { cn } from "@/lib/utils";
 import { generateCode } from "@/lib/utils";
 import { getContentTypeLabel } from "@/lib/contentTypeConstants";
-import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
+import { type DrawMode, drawModeMeta } from "@/components/manage/DrawModeTabs";
 import ModeChangeWarningModal from "@/components/manage/ModeChangeWarningModal";
 import {
   getManageContentDetail,
@@ -1014,7 +1014,22 @@ const ManageContent: React.FC = () => {
               )}
             </CardHeader>
             <CardContent className="space-y-3 pt-2">
-              <DrawModeTabs value={drawMode} onChange={handleDrawModeChange} />
+              <div className="rounded-lg border border-border bg-muted/30 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">현재 추첨 모드</p>
+                    <p className="text-base font-semibold text-foreground">{drawModeMeta[drawMode].label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {drawMode === "WEIGHTED"
+                        ? "보상별 당첨 확률을 직접 설정하는 방식입니다."
+                        : "미리 준비된 결과를 랜덤으로 뽑는 방식입니다."}
+                    </p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => handleDrawModeChange(drawMode === "WEIGHTED" ? "DRAW" : "WEIGHTED")}>
+                    모드 변경
+                  </Button>
+                </div>
+              </div>
               {showAddForm && (
                 <RewardFormCard
                   formId="new"
