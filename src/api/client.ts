@@ -20,6 +20,7 @@ import type {
   RewardBatchUpdateRequest,
   ManageInvitationCodeResponse,
   InvitationCodeCreateRequest,
+  InvitationCodeBatchCreateRequest,
   InvitationCodeUpdateRequest,
   ManageDrawResultResponse,
   ManageDrawResultsParams,
@@ -266,6 +267,15 @@ export async function getManageInvitationCode(invitationCodeId: number): Promise
 
 export async function createManageInvitationCode(payload: InvitationCodeCreateRequest): Promise<ManageInvitationCodeResponse> {
   return authRequest<ManageInvitationCodeResponse>("/api/manage/invitation-codes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createManageInvitationCodesBatch(
+  payload: InvitationCodeBatchCreateRequest
+): Promise<ManageInvitationCodeResponse[]> {
+  return authRequest<ManageInvitationCodeResponse[]>("/api/manage/invitation-codes/batch", {
     method: "POST",
     body: JSON.stringify(payload),
   });

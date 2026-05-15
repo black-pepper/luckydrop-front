@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { StateToggleButton } from "@/components/ui/state-toggle-button";
 import { Trash2, Plus, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
-import { createManageContent, createManageRewards, createManageInvitationCode } from "@/api/client";
+import { createManageContent, createManageRewards, createManageInvitationCodesBatch } from "@/api/client";
 import { generateCode } from "@/lib/utils";
 import type { ContentType } from "@/data/manageMockData";
 import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
@@ -77,6 +77,23 @@ const parseNonNegativeInteger = (value: string) => {
   }
 
   return { kind: "valid" as const, value: parsed };
+};
+
+const findDuplicateCodeIds = (codes: CodeRow[]) => {
+  const groupedIds = new Map<string, number[]>();
+
+  codes.forEach((code) => {
+    const trimmedCode = code.code.trim();
+    if (trimmedCode.length === 0) return;
+
+    const ids = groupedIds.get(trimmedCode) ?? [];
+    ids.push(code.id);
+    groupedIds.set(trimmedCode, ids);
+  });
+
+  return Array.from(groupedIds.values())
+    .filter((ids) => ids.length > 1)
+    .flat();
 };
 
 const CreateContent: React.FC = () => {
@@ -180,6 +197,10 @@ const CreateContent: React.FC = () => {
           errors[`codes.${code.id}.allowedDrawCount`] = "허용 횟수는 1 이상의 숫자여야 합니다.";
         }
       });
+
+      findDuplicateCodeIds(codes).forEach((id) => {
+        errors[`codes.${id}.code`] = "중복된 코드는 사용할 수 없습니다.";
+      });
     }
 
     return errors;
@@ -242,26 +263,30 @@ const CreateContent: React.FC = () => {
           }),
         });
       }
-      await Promise.all(
-        codes
-          .filter(
-            (c) =>
-              c.code.trim().length > 0 &&
-              c.name.trim().length > 0 &&
-              parsePositiveInteger(c.allowedDrawCount).kind === "valid"
-          )
-          .map((c) => {
-            const allowedDrawCount = parsePositiveInteger(c.allowedDrawCount);
+      const invitationCodes = codes
+        .filter(
+          (c) =>
+            c.code.trim().length > 0 &&
+            c.name.trim().length > 0 &&
+            parsePositiveInteger(c.allowedDrawCount).kind === "valid"
+        )
+        .map((c) => {
+          const allowedDrawCount = parsePositiveInteger(c.allowedDrawCount);
 
-            return createManageInvitationCode({
-              contentCode: created.code,
-              code: c.code.trim(),
-              name: c.name.trim(),
-              allowedDrawCount: allowedDrawCount.kind === "valid" ? allowedDrawCount.value : 1,
-              active: true,
-            });
-          })
-      );
+          return {
+            code: c.code.trim(),
+            name: c.name.trim(),
+            allowedDrawCount: allowedDrawCount.kind === "valid" ? allowedDrawCount.value : 1,
+          };
+        });
+
+      if (invitationCodes.length > 0) {
+        await createManageInvitationCodesBatch({
+          contentCode: created.code,
+          invitationCodes,
+        });
+      }
+
       navigate("/manage");
     } catch (e: any) {
       setSubmitError(e.message ?? "콘텐츠 생성에 실패했습니다");
