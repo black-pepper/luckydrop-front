@@ -223,6 +223,17 @@ export interface InvitationCodeCreateRequest {
   active: boolean;
 }
 
+// POST /api/manage/invitation-codes/batch
+export interface InvitationCodeBatchCreateRequest {
+  contentCode: string;
+  invitationCodes: Array<{
+    code: string;
+    name?: string;
+    allowedDrawCount: number;
+    expiresAt?: string | null; // ISO date-time
+  }>;
+}
+
 // PUT /api/manage/invitation-codes/{invitationCodeId}
 export interface InvitationCodeUpdateRequest {
   name?: string;

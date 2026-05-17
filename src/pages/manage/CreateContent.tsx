@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { StateToggleButton } from "@/components/ui/state-toggle-button";
 import { Trash2, Plus, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
-import { createManageContent, createManageRewards, createManageInvitationCode } from "@/api/client";
+import { createManageContent, createManageRewards, createManageInvitationCodesBatch } from "@/api/client";
 import { generateCode } from "@/lib/utils";
 import type { ContentType } from "@/data/manageMockData";
 import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
@@ -23,23 +23,78 @@ const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; d
 interface RewardRow {
   id: number;
   name: string;
-  weight: number;
-  poolCount: number;
-  stock: number;
+  weight: string;
+  poolCount: string;
+  stock: string;
   imageUrl: string;
   unlimited: boolean;
   allowDuplicateReward: boolean;
   active: boolean;
 }
-interface CodeRow { id: number; code: string; name: string; allowedDrawCount: number }
+interface CodeRow { id: number; code: string; name: string; allowedDrawCount: string }
 type ValidationErrors = Record<string, string>;
 
 const initialRewards: RewardRow[] = [
-  { id: 1, name: "교환권", weight: 10, poolCount: 5, stock: 12, imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: true, active: true },
-  { id: 2, name: "꽝", weight: 60, poolCount: 5, stock: 0, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true },
+  { id: 1, name: "교환권", weight: "10", poolCount: "5", stock: "12", imageUrl: "https://placehold.co/120x120/e2e8f0/64748b?text=☕", unlimited: false, allowDuplicateReward: true, active: true },
+  { id: 2, name: "꽝", weight: "60", poolCount: "5", stock: "", imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true },
 ];
 
 const initialCodes: CodeRow[] = [];
+
+const isDigitsOnly = (value: string) => /^\d*$/.test(value);
+
+const parsePositiveInteger = (value: string) => {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return { kind: "empty" as const };
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    return { kind: "invalid" as const };
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return { kind: "nonPositive" as const };
+  }
+
+  return { kind: "valid" as const, value: parsed };
+};
+
+const parseNonNegativeInteger = (value: string) => {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return { kind: "empty" as const };
+  }
+
+  if (!/^\d+$/.test(trimmed)) {
+    return { kind: "invalid" as const };
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    return { kind: "negative" as const };
+  }
+
+  return { kind: "valid" as const, value: parsed };
+};
+
+const findDuplicateCodeIds = (codes: CodeRow[]) => {
+  const groupedIds = new Map<string, number[]>();
+
+  codes.forEach((code) => {
+    const trimmedCode = code.code.trim();
+    if (trimmedCode.length === 0) return;
+
+    const ids = groupedIds.get(trimmedCode) ?? [];
+    ids.push(code.id);
+    groupedIds.set(trimmedCode, ids);
+  });
+
+  return Array.from(groupedIds.values())
+    .filter((ids) => ids.length > 1)
+    .flat();
+};
 
 const CreateContent: React.FC = () => {
   const navigate = useNavigate();
@@ -67,16 +122,16 @@ const CreateContent: React.FC = () => {
   };
 
   const addReward = () =>
-    setRewards((r) => [...r, { id: Date.now(), name: "", weight: 10, poolCount: 5, stock: 10, imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true }]);
+    setRewards((r) => [...r, { id: Date.now(), name: "", weight: "", poolCount: "", stock: "", imageUrl: "", unlimited: true, allowDuplicateReward: true, active: true }]);
   const removeReward = (id: number) => setRewards((r) => r.filter((x) => x.id !== id));
-  const updateReward = (id: number, field: keyof RewardRow, value: string | number | boolean) => {
+  const updateReward = (id: number, field: keyof RewardRow, value: string | boolean) => {
     clearFieldError(`rewards.${id}.${field}`);
     setRewards((r) => r.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
   };
 
-  const addCode = () => setCodes((c) => [...c, { id: Date.now(), code: generateCode(), name: "", allowedDrawCount: 1 }]);
+  const addCode = () => setCodes((c) => [...c, { id: Date.now(), code: generateCode(), name: "", allowedDrawCount: "" }]);
   const removeCode = (id: number) => setCodes((c) => c.filter((x) => x.id !== id));
-  const updateCode = (id: number, field: keyof CodeRow, value: string | number) => {
+  const updateCode = (id: number, field: keyof CodeRow, value: string) => {
     clearFieldError(`codes.${id}.${field}`);
     setCodes((c) => c.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
   };
@@ -99,15 +154,28 @@ const CreateContent: React.FC = () => {
         }
 
         if (drawMode === "WEIGHTED") {
-          if (reward.weight <= 0) {
-            errors[`rewards.${reward.id}.weight`] = "가중치는 1 이상이어야 합니다.";
+          const weight = parsePositiveInteger(reward.weight);
+          if (weight.kind === "empty") {
+            errors[`rewards.${reward.id}.weight`] = "가중치를 입력해주세요.";
+          } else if (weight.kind !== "valid") {
+            errors[`rewards.${reward.id}.weight`] = "가중치는 1 이상의 숫자여야 합니다.";
           }
 
-          if (!reward.unlimited && reward.stock <= 0) {
-            errors[`rewards.${reward.id}.stock`] = "수량은 1 이상이어야 합니다.";
+          if (!reward.unlimited) {
+            const stock = parseNonNegativeInteger(reward.stock);
+            if (stock.kind === "empty") {
+              errors[`rewards.${reward.id}.stock`] = "수량을 입력해주세요.";
+            } else if (stock.kind !== "valid") {
+              errors[`rewards.${reward.id}.stock`] = "수량은 0 이상의 숫자여야 합니다.";
+            }
           }
-        } else if (reward.poolCount <= 0) {
-          errors[`rewards.${reward.id}.poolCount`] = "개수는 1 이상이어야 합니다.";
+        } else {
+          const poolCount = parseNonNegativeInteger(reward.poolCount);
+          if (poolCount.kind === "empty") {
+            errors[`rewards.${reward.id}.poolCount`] = "개수를 입력해주세요.";
+          } else if (poolCount.kind !== "valid") {
+            errors[`rewards.${reward.id}.poolCount`] = "개수는 0 이상의 숫자여야 합니다.";
+          }
         }
       });
     }
@@ -122,9 +190,16 @@ const CreateContent: React.FC = () => {
           errors[`codes.${code.id}.name`] = "참여자 이름을 입력해주세요.";
         }
 
-        if (code.allowedDrawCount <= 0) {
-          errors[`codes.${code.id}.allowedDrawCount`] = "허용 횟수는 1 이상이어야 합니다.";
+        const allowedDrawCount = parsePositiveInteger(code.allowedDrawCount);
+        if (allowedDrawCount.kind === "empty") {
+          errors[`codes.${code.id}.allowedDrawCount`] = "허용 횟수를 입력해주세요.";
+        } else if (allowedDrawCount.kind !== "valid") {
+          errors[`codes.${code.id}.allowedDrawCount`] = "허용 횟수는 1 이상의 숫자여야 합니다.";
         }
+      });
+
+      findDuplicateCodeIds(codes).forEach((id) => {
+        errors[`codes.${id}.code`] = "중복된 코드는 사용할 수 없습니다.";
       });
     }
 
@@ -165,31 +240,53 @@ const CreateContent: React.FC = () => {
         startAt: startAt ? new Date(startAt).toISOString() : undefined,
         endAt: endAt ? new Date(endAt).toISOString() : undefined,
       });
-      await createManageRewards({
-        contentCode: created.code,
-        rewards: rewards.map((r) => ({
-          name: r.name,
-          ...(drawMode === "WEIGHTED"
-            ? { weight: r.weight, stock: r.unlimited ? undefined : r.stock }
-            : { poolCount: r.poolCount }),
-          imageUrl: r.imageUrl || undefined,
-          allowDuplicateReward: r.allowDuplicateReward,
-          active: r.active,
-        })),
-      });
-      await Promise.all(
-        codes
-          .filter((c) => c.code.trim().length > 0)
-          .map((c) =>
-            createManageInvitationCode({
-              contentCode: created.code,
-              code: c.code.trim(),
-              name: c.name || undefined,
-              allowedDrawCount: c.allowedDrawCount,
-              active: true,
-            })
-          )
-      );
+      if (rewards.length > 0) {
+        await createManageRewards({
+          contentCode: created.code,
+          rewards: rewards.map((r) => {
+            const weight = parsePositiveInteger(r.weight);
+            const stock = parseNonNegativeInteger(r.stock);
+            const poolCount = parseNonNegativeInteger(r.poolCount);
+
+            return {
+              name: r.name,
+              ...(drawMode === "WEIGHTED"
+                ? {
+                    weight: weight.kind === "valid" ? weight.value : 1,
+                    stock: r.unlimited ? undefined : stock.kind === "valid" ? stock.value : 0,
+                  }
+                : { poolCount: poolCount.kind === "valid" ? poolCount.value : 0 }),
+              imageUrl: r.imageUrl || undefined,
+              allowDuplicateReward: r.allowDuplicateReward,
+              active: r.active,
+            };
+          }),
+        });
+      }
+      const invitationCodes = codes
+        .filter(
+          (c) =>
+            c.code.trim().length > 0 &&
+            c.name.trim().length > 0 &&
+            parsePositiveInteger(c.allowedDrawCount).kind === "valid"
+        )
+        .map((c) => {
+          const allowedDrawCount = parsePositiveInteger(c.allowedDrawCount);
+
+          return {
+            code: c.code.trim(),
+            name: c.name.trim(),
+            allowedDrawCount: allowedDrawCount.kind === "valid" ? allowedDrawCount.value : 1,
+          };
+        });
+
+      if (invitationCodes.length > 0) {
+        await createManageInvitationCodesBatch({
+          contentCode: created.code,
+          invitationCodes,
+        });
+      }
+
       navigate("/manage");
     } catch (e: any) {
       setSubmitError(e.message ?? "콘텐츠 생성에 실패했습니다");
@@ -294,6 +391,12 @@ const CreateContent: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <DrawModeTabs value={drawMode} onChange={setDrawMode} />
+              {rewards.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">보상 없이 생성할 수 있습니다</p>
+                  <p className="text-xs mt-1">필요하면 아래 버튼으로 추가하고, 나중에 다시 등록해도 됩니다.</p>
+                </div>
+              )}
               {rewards.map((r, idx) => (
                 <Card key={r.id} className="border border-border bg-muted/30">
                   <CardContent className="p-3 space-y-3">
@@ -330,9 +433,15 @@ const CreateContent: React.FC = () => {
                           </div>
                           <Input
                             type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             placeholder="가중치"
                             value={r.weight}
-                            onChange={(e) => updateReward(r.id, "weight", Number(e.target.value))}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (!isDigitsOnly(value)) return;
+                              updateReward(r.id, "weight", value);
+                            }}
                             className={validationErrors[`rewards.${r.id}.weight`] ? "border-destructive focus-visible:ring-destructive" : ""}
                           />
                           {validationErrors[`rewards.${r.id}.weight`] && (
@@ -352,9 +461,15 @@ const CreateContent: React.FC = () => {
                             />
                             <Input
                               type="number"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               placeholder="수량"
                               value={r.stock}
-                              onChange={(e) => updateReward(r.id, "stock", Number(e.target.value))}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (!isDigitsOnly(value)) return;
+                                updateReward(r.id, "stock", value);
+                              }}
                               disabled={r.unlimited}
                               className={`flex-1 ${r.unlimited ? "opacity-50" : ""} ${validationErrors[`rewards.${r.id}.stock`] ? "border-destructive focus-visible:ring-destructive" : ""}`}
                             />
@@ -372,9 +487,15 @@ const CreateContent: React.FC = () => {
                         </div>
                         <Input
                           type="number"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
                           placeholder="5"
                           value={r.poolCount}
-                          onChange={(e) => updateReward(r.id, "poolCount", Number(e.target.value))}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (!isDigitsOnly(value)) return;
+                            updateReward(r.id, "poolCount", value);
+                          }}
                           className={validationErrors[`rewards.${r.id}.poolCount`] ? "border-destructive focus-visible:ring-destructive" : ""}
                         />
                         {validationErrors[`rewards.${r.id}.poolCount`] && (
@@ -439,7 +560,7 @@ const CreateContent: React.FC = () => {
 
             {codes.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                <p className="text-sm">지금은 코드 없이 생성할 수 있습니다</p>
+                <p className="text-sm">코드 없이 생성할 수 있습니다</p>
                 <p className="text-xs mt-1">필요하면 아래 버튼으로 추가하고, 나중에 다시 등록해도 됩니다.</p>
               </div>
             )}
@@ -488,9 +609,16 @@ const CreateContent: React.FC = () => {
                         <Label className="text-xs">허용 횟수 <span className="text-destructive">*</span></Label>
                         <Input
                           type="number"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="1"
                           className={`text-sm ${validationErrors[`codes.${c.id}.allowedDrawCount`] ? "border-destructive focus-visible:ring-destructive" : ""}`}
                           value={c.allowedDrawCount}
-                          onChange={(e) => updateCode(c.id, "allowedDrawCount", Number(e.target.value))}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (!isDigitsOnly(value)) return;
+                            updateCode(c.id, "allowedDrawCount", value);
+                          }}
                         />
                         {validationErrors[`codes.${c.id}.allowedDrawCount`] && (
                           <p className="text-sm text-destructive">{validationErrors[`codes.${c.id}.allowedDrawCount`]}</p>
