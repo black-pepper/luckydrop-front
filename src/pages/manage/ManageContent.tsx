@@ -1087,7 +1087,9 @@ const ManageContent: React.FC = () => {
                         {r.poolCount !== null && (
                           <span>개수 <span className="font-medium text-foreground">{r.poolCount}</span></span>
                         )}
-                        <span>재고 <span className="font-medium text-foreground">{r.stock == null ? "무제한" : `${r.stock}개`}</span></span>
+                        {r.poolCount === null && (
+                          <span>재고 <span className="font-medium text-foreground">{r.stock == null ? "무제한" : `${r.stock}개`}</span></span>
+                        )}
                         {r.allowDuplicateReward && <Badge variant="outline" className="text-[10px] px-1.5 py-0">중복허용</Badge>}
                       </div>
                     </div>
