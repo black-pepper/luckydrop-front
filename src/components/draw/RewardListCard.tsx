@@ -52,30 +52,41 @@ const RewardListCard = ({ contentCode, invitationCode }: RewardListCardProps) =>
             <div className="text-center py-4 text-sm text-muted-foreground">보상 정보가 없습니다</div>
           ) : (
             rewards.map((r) => (
-              <div
-                key={r.id}
-                className="rounded-2xl bg-card p-3.5 shadow-[var(--shadow-card)] border-l-4 border-l-mint flex items-center gap-3"
-              >
-                {r.imageUrl ? (
-                  <img src={r.imageUrl} alt={r.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                ) : (
-                  <div className="text-2xl flex-shrink-0">🎁</div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-card-foreground truncate">{r.name}</p>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      {r.probability ?? 0}%
-                    </span>
+              (() => {
+                const quantityLabel =
+                  r.poolCount != null
+                    ? `${r.poolCount}개`
+                    : r.stock != null
+                      ? `${r.stock}개 남음`
+                      : null;
+
+                return (
+                  <div
+                    key={r.id}
+                    className="rounded-2xl bg-card p-3.5 shadow-[var(--shadow-card)] border-l-4 border-l-mint flex items-center gap-3"
+                  >
+                    {r.imageUrl ? (
+                      <img src={r.imageUrl} alt={r.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="text-2xl flex-shrink-0">🎁</div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-card-foreground truncate">{r.name}</p>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          {r.probability ?? 0}%
+                        </span>
+                      </div>
+                      {r.description && (
+                        <p className="text-xs text-muted-foreground/70 mt-0.5">{r.description}</p>
+                      )}
+                      {quantityLabel && (
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">{quantityLabel}</p>
+                      )}
+                    </div>
                   </div>
-                  {r.description && (
-                    <p className="text-xs text-muted-foreground/70 mt-0.5">{r.description}</p>
-                  )}
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">
-                    {r.unlimited ? "수량 충분" : `${r.stock ?? 0}개 남음`}
-                  </p>
-                </div>
-              </div>
+                );
+              })()
             ))
           )}
         </div>
