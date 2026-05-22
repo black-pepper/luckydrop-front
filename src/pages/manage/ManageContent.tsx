@@ -162,6 +162,21 @@ const getNonNegativeIntegerError = (value: string, emptyMessage: string, invalid
   return null;
 };
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = error.message;
+    if (typeof message === "string") {
+      return message;
+    }
+  }
+
+  return fallback;
+};
+
 // ── RewardFormCard ──────────────────────────────────────────────────────────
 
 const RewardFormCard: React.FC<{
@@ -584,8 +599,8 @@ const ManageContent: React.FC = () => {
       });
       setContent({ ...updated, createdAt: content.createdAt });
       setIsEditingInfo(false);
-    } catch (e: any) {
-      setSaveError(e.message ?? "저장에 실패했습니다");
+    } catch (error) {
+      setSaveError(getErrorMessage(error, "저장에 실패했습니다"));
     } finally {
       setSaving(false);
     }
@@ -609,8 +624,8 @@ const ManageContent: React.FC = () => {
     try {
       await deleteManageContent(contentCode);
       navigate("/manage");
-    } catch (e: any) {
-      alert(e.message ?? "삭제에 실패했습니다");
+    } catch (error) {
+      alert(getErrorMessage(error, "삭제에 실패했습니다"));
       setDeleting(false);
     }
   };
@@ -660,8 +675,8 @@ const ManageContent: React.FC = () => {
       setRewards((prev) => [...prev, created]);
       setShowAddForm(false);
       setAddForm(emptyForm());
-    } catch (e: any) {
-      setAddError(e.message ?? "보상 추가에 실패했습니다");
+    } catch (error) {
+      setAddError(getErrorMessage(error, "보상 추가에 실패했습니다"));
     } finally {
       setAdding(false);
     }
@@ -710,8 +725,8 @@ const ManageContent: React.FC = () => {
       });
       setRewards((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
       setEditingRewardId(null);
-    } catch (e: any) {
-      setEditRewardError(e.message ?? "수정에 실패했습니다");
+    } catch (error) {
+      setEditRewardError(getErrorMessage(error, "수정에 실패했습니다"));
     } finally {
       setEditingReward(false);
     }
@@ -722,8 +737,8 @@ const ManageContent: React.FC = () => {
     try {
       await deleteManageReward(rewardId);
       setRewards((prev) => prev.filter((r) => r.id !== rewardId));
-    } catch (e: any) {
-      alert(e.message ?? "삭제에 실패했습니다");
+    } catch (error) {
+      alert(getErrorMessage(error, "삭제에 실패했습니다"));
     }
   };
 
@@ -754,8 +769,8 @@ const ManageContent: React.FC = () => {
       setRewards(updated);
       setDrawMode(modeChangeNextMode);
       setModeChangeNextMode(null);
-    } catch (e: any) {
-      alert(e.message ?? "변환에 실패했습니다");
+    } catch (error) {
+      alert(getErrorMessage(error, "변환에 실패했습니다"));
     } finally {
       setModeChanging(false);
     }
@@ -769,8 +784,8 @@ const ManageContent: React.FC = () => {
       setRewards([]);
       setDrawMode(modeChangeNextMode);
       setModeChangeNextMode(null);
-    } catch (e: any) {
-      alert(e.message ?? "초기화에 실패했습니다");
+    } catch (error) {
+      alert(getErrorMessage(error, "초기화에 실패했습니다"));
     } finally {
       setModeChanging(false);
     }
@@ -803,8 +818,8 @@ const ManageContent: React.FC = () => {
       setInviteCodes((prev) => [...prev, created]);
       setShowAddCodeForm(false);
       setAddCodeForm(emptyCodeForm());
-    } catch (e: any) {
-      setAddCodeError(e.message ?? "추첨 코드 추가에 실패했습니다");
+    } catch (error) {
+      setAddCodeError(getErrorMessage(error, "추첨 코드 추가에 실패했습니다"));
     } finally {
       setAddingCode(false);
     }
@@ -834,8 +849,8 @@ const ManageContent: React.FC = () => {
       });
       setInviteCodes((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
       setEditingCodeId(null);
-    } catch (e: any) {
-      setEditCodeError(e.message ?? "수정에 실패했습니다");
+    } catch (error) {
+      setEditCodeError(getErrorMessage(error, "수정에 실패했습니다"));
     } finally {
       setEditingCode(false);
     }
@@ -846,8 +861,8 @@ const ManageContent: React.FC = () => {
     try {
       await deleteManageInvitationCode(invitationCodeId);
       setInviteCodes((prev) => prev.filter((c) => c.id !== invitationCodeId));
-    } catch (e: any) {
-      alert(e.message ?? "삭제에 실패했습니다");
+    } catch (error) {
+      alert(getErrorMessage(error, "삭제에 실패했습니다"));
     }
   };
 
