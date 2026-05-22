@@ -1222,7 +1222,7 @@ const ManageContent: React.FC = () => {
             const pageNumbers = (() => {
               const max = 5;
               let start = Math.max(1, currentPage - 2);
-              let end = Math.min(totalPages, start + max - 1);
+              const end = Math.min(totalPages, start + max - 1);
               start = Math.max(1, end - max + 1);
               return Array.from({ length: end - start + 1 }, (_, i) => start + i);
             })();
