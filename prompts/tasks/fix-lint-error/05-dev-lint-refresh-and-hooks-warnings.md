@@ -1,5 +1,5 @@
 파일명:
-- 05-draft-dev-lint-refresh-and-hooks-warnings.md
+- 05-dev-lint-refresh-and-hooks-warnings.md
 
 다음 공통 규칙을 따른다.
 - `prompts/common-rules.md`

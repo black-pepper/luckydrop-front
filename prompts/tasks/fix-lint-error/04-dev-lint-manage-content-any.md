@@ -1,5 +1,5 @@
 파일명:
-- 04-draft-dev-lint-manage-content-any.md
+- 04-dev-lint-manage-content-any.md
 
 다음 공통 규칙을 따른다.
 - `prompts/common-rules.md`

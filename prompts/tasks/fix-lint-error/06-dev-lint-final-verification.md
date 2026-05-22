@@ -1,5 +1,5 @@
 파일명:
-- 06-draft-dev-lint-final-verification.md
+- 06-dev-lint-final-verification.md
 
 다음 공통 규칙을 따른다.
 - `prompts/common-rules.md`

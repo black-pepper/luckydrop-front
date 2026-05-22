@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { type DrawMode } from "./DrawModeTabs";
-import { drawModeMeta } from "./DrawModeTabs";
+import { drawModeMeta } from "./draw-mode";
 
 export interface ModeChangeWarningModalProps {
   open: boolean;

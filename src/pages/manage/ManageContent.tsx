@@ -20,7 +20,7 @@ import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save, Calen
 import { cn } from "@/lib/utils";
 import { generateCode } from "@/lib/utils";
 import { getContentTypeLabel } from "@/lib/contentTypeConstants";
-import { type DrawMode, drawModeMeta } from "@/components/manage/DrawModeTabs";
+import { type DrawMode, drawModeMeta } from "@/components/manage/draw-mode";
 import ModeChangeWarningModal from "@/components/manage/ModeChangeWarningModal";
 import {
   getManageContentDetail,

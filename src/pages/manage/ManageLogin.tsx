@@ -14,6 +14,7 @@ const LOGIN_CALLBACK_URL =
 const ManageLogin: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const redirectTo = (location.state as { redirectTo?: string } | null)?.redirectTo ?? DEFAULT_REDIRECT_PATH;
   const navigatedTokenRef = React.useRef<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
@@ -35,8 +36,7 @@ const ManageLogin: React.FC = () => {
       try {
         await getCurrentUser();
         setStatusMessage("로그인에 성공했어요. 관리자 화면으로 이동합니다.");
-        const redirectTo = (location.state as { redirectTo?: string } | null)?.redirectTo;
-        navigate(redirectTo ?? DEFAULT_REDIRECT_PATH, { replace: true });
+        navigate(redirectTo, { replace: true });
       } catch (error) {
         navigatedTokenRef.current = null;
         setStatusMessage(null);
@@ -45,7 +45,7 @@ const ManageLogin: React.FC = () => {
         setIsSubmitting(false);
       }
     },
-    [navigate],
+    [navigate, redirectTo],
   );
 
   React.useEffect(() => {
