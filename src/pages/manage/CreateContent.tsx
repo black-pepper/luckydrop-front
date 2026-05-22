@@ -288,8 +288,8 @@ const CreateContent: React.FC = () => {
       }
 
       navigate("/manage");
-    } catch (e: any) {
-      setSubmitError(e.message ?? "콘텐츠 생성에 실패했습니다");
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "콘텐츠 생성에 실패했습니다");
       setSubmitting(false);
     }
   };
