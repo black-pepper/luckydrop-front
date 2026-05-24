@@ -30,10 +30,6 @@ const ManageSettings: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
-
   const fetchUserData = async () => {
     try {
       setIsLoading(true);
@@ -48,6 +44,10 @@ const ManageSettings: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
   // 날짜 포맷 변환 (YYYY.MM.DD)
   const formatDate = (dateString?: string) => {
