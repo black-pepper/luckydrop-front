@@ -93,48 +93,6 @@ src/
 - `npm run test`: 테스트 실행
 - `npm run test:watch`: 테스트 watch 모드 실행
 
-## AI 작업 프롬프트
-
-프롬프트 원본은 Notion의 `프롬프트 문서` 데이터베이스에서 관리합니다. 작업 요청 시 로컬 `prompts/` 파일 대신 Notion 문서의 `호출 이름`을 기준으로 참조합니다.
-
-### 기본 참조 문서
-- `common-rules`: 모든 작업에 공통 적용하는 규칙
-- `frontend-project-context`: 프론트엔드 구조, 스택, 라우팅, API/env/scripts 컨텍스트
-- `backend-api-context`: 프론트/백엔드 연동 API 계약
-- `frontend-design-spec`: UI 디자인 토큰, 화면 톤, 컴포넌트 패턴
-- `development-mode`: 기능 개발, 버그 수정, 리팩터링 작업용 모드
-- `review-mode`: 코드 리뷰 또는 결과물 리뷰용 모드
-- `verification-mode`: 구현 결과 검증용 모드
-- `prompt-draft-template`: 실행 전 프롬프트 초안 작성 템플릿
-
-### 사용 방식
-1. 작업 성격에 맞는 모드 문서를 고릅니다.
-   - 개발/수정: `development-mode`
-   - 리뷰: `review-mode`
-   - 검증: `verification-mode`
-2. 항상 `common-rules`와 `frontend-project-context`를 함께 참조합니다.
-3. API 연동 작업이면 `backend-api-context`를 추가로 참조합니다.
-4. UI나 화면 구성이 바뀌는 작업이면 `frontend-design-spec`를 추가로 참조합니다.
-5. 작업 범위가 크거나 애매하면 `prompt-draft-template` 기준으로 초안을 먼저 만들고 검수 후 실행합니다.
-
-예시:
-
-```md
-Notion 프롬프트 문서에서 아래 문서를 참조해서 작업해줘.
-
-- common-rules
-- frontend-project-context
-- backend-api-context
-- development-mode
-
-작업 목표:
-- 관리자 콘텐츠 상세 화면에서 새 API 응답 필드를 반영한다.
-
-제약:
-- 기존 라우팅과 API wrapper 구조를 유지한다.
-- 필요한 경우 테스트 또는 검증 결과를 함께 보고한다.
-```
-
 ## 라이선스
 
 이 프로젝트는 [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0)에 따라 배포됩니다.

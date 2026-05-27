@@ -29,4 +29,5 @@ luckydrop-ui/
 *.sw?
 
 # Others
+.codex
 .claude/
