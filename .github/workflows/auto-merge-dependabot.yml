@@ -51,7 +51,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: gh pr merge "$PR_NUMBER" --squash --delete-branch --subject "Merge Dependabot PR #${PR_NUMBER}"
+        run: |
+          gh pr merge "$PR_NUMBER" \
+            --squash \
+            --delete-branch \
+            --subject "Merge Dependabot PR ${PR_NUMBER}"
 
       - name: Open or update aggregate dependency PR
         if: steps.pr.outputs.number != ''
