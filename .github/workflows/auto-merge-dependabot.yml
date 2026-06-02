@@ -25,6 +25,9 @@ jobs:
       github.event.workflow_run.event == 'pull_request'
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Find matching Dependabot PR
         id: pr
         env:
