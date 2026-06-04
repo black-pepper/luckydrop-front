@@ -41,10 +41,27 @@ export class ApiError extends Error {
 
 // ── Base request helpers ────────────────────────────────────────────────────
 
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
+async function request<T>(
+  url: string,
+  options?: RequestInit,
+  config?: { includeAuth?: boolean }
+): Promise<T> {
+  const headers = new Headers(options?.headers);
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (config?.includeAuth) {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+  }
+
   const res = await fetch(`${API_BASE_URL}${url}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers,
   });
 
   if (!res.ok) {
@@ -320,7 +337,7 @@ export async function createInquiry(payload: InquiryRequest): Promise<void> {
   return request<void>("/inquiries", {
     method: "POST",
     body: JSON.stringify(payload),
-  });
+  }, { includeAuth: true });
 }
 
 export async function updateDeliveryStatus(
