@@ -283,6 +283,19 @@ export interface DrawResultDeliveryUpdateRequest {
 
 // POST /inquiries
 export type InquiryType = "GENERAL" | "BUG" | "FEATURE" | "ETC";
+export type InquiryStatus = "PENDING" | "DONE";
+
+// GET /user/inquiries
+export interface UserInquiry {
+  id: number;
+  createdAt: string; // ISO date-time
+  type: InquiryType;
+  title: string;
+  content: string;
+  status: InquiryStatus;
+  answer: string | null;
+  answeredAt: string | null; // ISO date-time
+}
 
 export interface InquiryRequest {
   type: InquiryType;

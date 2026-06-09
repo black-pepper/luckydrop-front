@@ -15,11 +15,12 @@ import {
 } from "@/components/ui/select";
 import { ChevronLeft, Info } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { inquiryTypeLabel, type InquiryType } from "@/data/inquiriesMockData";
+import type { InquiryType } from "@/api/types";
+import { inquiryTypeLabel } from "@/data/inquiriesMockData";
 
 const InquiryNew: React.FC = () => {
   const navigate = useNavigate();
-  const [type, setType] = useState<InquiryType>("SERVICE");
+  const [type, setType] = useState<InquiryType>("GENERAL");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
