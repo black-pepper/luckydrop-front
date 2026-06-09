@@ -1288,7 +1288,6 @@ const ManageContent: React.FC = () => {
                               mode="single"
                               selected={pendingDrawnAtFrom ?? undefined}
                               onSelect={(d) => setPendingDrawnAtFrom(d ?? null)}
-                              initialFocus
                               className={cn("p-3 pointer-events-auto")}
                             />
                           </PopoverContent>
@@ -1316,7 +1315,6 @@ const ManageContent: React.FC = () => {
                               mode="single"
                               selected={pendingDrawnAtTo ?? undefined}
                               onSelect={(d) => setPendingDrawnAtTo(d ?? null)}
-                              initialFocus
                               className={cn("p-3 pointer-events-auto")}
                             />
                           </PopoverContent>
