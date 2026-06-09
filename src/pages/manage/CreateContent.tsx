@@ -15,9 +15,9 @@ import type { ContentType } from "@/data/manageMockData";
 import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
 
 const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string; disabled?: boolean }[] = [
-  { value: "draw", label: "뽑기", icon: <Gift className="h-7 w-7" />, desc: "보상을 설정하고 참여자가 뽑기" },
-  { value: "quiz", label: "퀴즈", icon: <HelpCircle className="h-7 w-7" />, desc: "준비 중인 기능입니다", disabled: true },
-  { value: "messagebox", label: "메시지함", icon: <MessageSquare className="h-7 w-7" />, desc: "준비 중인 기능입니다", disabled: true },
+  { value: "DRAW", label: "뽑기", icon: <Gift className="h-7 w-7" />, desc: "보상을 설정하고 참여자가 뽑기" },
+  { value: "QUIZ", label: "퀴즈", icon: <HelpCircle className="h-7 w-7" />, desc: "준비 중인 기능입니다", disabled: true },
+  { value: "MESSAGEBOX", label: "메시지함", icon: <MessageSquare className="h-7 w-7" />, desc: "준비 중인 기능입니다", disabled: true },
 ];
 
 interface RewardRow {
@@ -99,7 +99,7 @@ const findDuplicateCodeIds = (codes: CodeRow[]) => {
 const CreateContent: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [contentType, setContentType] = useState<ContentType | null>("draw");
+  const [contentType, setContentType] = useState<ContentType | null>("DRAW");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
