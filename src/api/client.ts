@@ -27,6 +27,7 @@ import type {
   PageResponse,
   DrawResultDeliveryUpdateRequest,
   InquiryRequest,
+  UserInquiry,
 } from "./types";
 import { supabase } from "@/lib/supabase";
 
@@ -332,6 +333,14 @@ export async function getManageDrawResults(
 }
 
 // ── Inquiry API ────────────────────────────────────────────────────────────
+
+export async function getUserInquiries(): Promise<UserInquiry[]> {
+  return authRequest<UserInquiry[]>("/user/inquiries");
+}
+
+export async function getUserInquiry(inquiryId: number): Promise<UserInquiry> {
+  return authRequest<UserInquiry>(`/user/inquiries/${inquiryId}`);
+}
 
 export async function createInquiry(payload: InquiryRequest): Promise<void> {
   return request<void>("/inquiries", {
