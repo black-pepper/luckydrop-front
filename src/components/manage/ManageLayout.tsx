@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, PlusCircle, LogOut, Settings, Menu } from "lucide-react";
+import { LayoutDashboard, PlusCircle, LogOut, Settings, Menu, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { to: "/manage", label: "대시보드", icon: LayoutDashboard },
   { to: "/manage/create", label: "콘텐츠 만들기", icon: PlusCircle },
+  { to: "/manage/inquiries", label: "내 문의", icon: MessageCircle },
   { to: "/manage/settings", label: "설정", icon: Settings },
 ];
 
@@ -34,7 +35,7 @@ const SidebarNav = ({ pathname, onLogout, onNavigate }: SidebarNavProps) => (
 
     <nav className="flex flex-col gap-1 mt-2 flex-1">
       {navItems.map((item) => {
-        const active = pathname === item.to;
+        const active = pathname === item.to || (item.to !== "/manage" && pathname.startsWith(`${item.to}/`));
         return (
           <Link
             key={item.to}
