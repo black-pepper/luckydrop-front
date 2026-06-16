@@ -16,6 +16,7 @@ import ManageSettings from "./pages/manage/ManageSettings";
 import InquiriesList from "./pages/manage/InquiriesList";
 import InquiryNew from "./pages/manage/InquiryNew";
 import InquiryDetail from "./pages/manage/InquiryDetail";
+import ParticipationHistory from "./pages/manage/ParticipationHistory";
 import ProtectedRoute from "./components/manage/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/manage/inquiries" element={<ProtectedRoute><InquiriesList /></ProtectedRoute>} />
           <Route path="/manage/inquiries/new" element={<ProtectedRoute><InquiryNew /></ProtectedRoute>} />
           <Route path="/manage/inquiries/:id" element={<ProtectedRoute><InquiryDetail /></ProtectedRoute>} />
+          <Route path="/manage/history" element={<ProtectedRoute><ParticipationHistory /></ProtectedRoute>} />
           <Route path="/manage/:contentCode" element={<ProtectedRoute><ManageContent /></ProtectedRoute>} />
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
