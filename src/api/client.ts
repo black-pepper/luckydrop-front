@@ -28,6 +28,8 @@ import type {
   DrawResultDeliveryUpdateRequest,
   InquiryRequest,
   UserInquiry,
+  ParticipationHistory,
+  ParticipationHistorySearchParams,
 } from "./types";
 import { supabase } from "@/lib/supabase";
 
@@ -88,7 +90,11 @@ function buildDrawQuery({ contentCode, invitationCode }: DrawParticipantParams) 
 
 // 코드 검증 (mock findUser → API)
 export async function verifyCode(params: DrawParticipantParams): Promise<CodeVerifyResponse> {
-  return request<CodeVerifyResponse>(`/api/draw/verify?${buildDrawQuery(params)}`);
+  return request<CodeVerifyResponse>(
+    `/api/draw/verify?${buildDrawQuery(params)}`,
+    undefined,
+    { includeAuth: true }
+  );
 }
 
 // 뽑기 실행 (mock getRandomPrize → API)
@@ -96,7 +102,7 @@ export async function executeDraw(payload: DrawRequest): Promise<DrawResponse> {
   return request<DrawResponse>("/api/draw/execute", {
     method: "POST",
     body: JSON.stringify(payload satisfies DrawRequest),
-  });
+  }, { includeAuth: true });
 }
 
 // 보상 목록 조회 (mock rewards → API)
@@ -211,6 +217,22 @@ export async function withdrawUser(): Promise<void> {
   return authRequest<void>("/user", {
     method: "DELETE",
   });
+}
+
+// ── My Participation History API ───────────────────────────────────────────
+
+export async function getMyParticipationHistories(
+  params: ParticipationHistorySearchParams = {}
+): Promise<PageResponse<ParticipationHistory>> {
+  const sp = new URLSearchParams();
+  if (params.keyword?.trim()) sp.set("keyword", params.keyword.trim());
+  if (params.status) sp.set("status", params.status);
+  sp.set("page", String(params.page ?? 0));
+  sp.set("size", String(params.size ?? 20));
+
+  return authRequest<PageResponse<ParticipationHistory>>(
+    `/api/me/participation-histories?${sp.toString()}`
+  );
 }
 
 // ── Manage Reward API ──────────────────────────────────────────────────────
