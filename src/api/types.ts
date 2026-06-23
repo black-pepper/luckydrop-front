@@ -253,6 +253,26 @@ export interface PageResponse<T> {
   last: boolean;
 }
 
+// GET /api/me/participation-histories
+export type ParticipationContentStatus = "ACTIVE" | "SCHEDULED" | "ENDED" | "DELETED";
+
+export interface ParticipationHistory {
+  contentCode: string;
+  contentTitle: string | null;
+  contentStatus: ParticipationContentStatus;
+  invitationCode: string;
+  accessedAt: string; // ISO date-time
+  startAt: string | null; // ISO date-time
+  endAt: string | null; // ISO date-time
+}
+
+export interface ParticipationHistorySearchParams {
+  keyword?: string;
+  status?: ParticipationContentStatus;
+  page?: number;
+  size?: number;
+}
+
 // GET /api/manage/draw-results 쿼리 파라미터
 export interface ManageDrawResultsParams {
   contentCode: string;
@@ -283,6 +303,19 @@ export interface DrawResultDeliveryUpdateRequest {
 
 // POST /inquiries
 export type InquiryType = "GENERAL" | "BUG" | "FEATURE" | "ETC";
+export type InquiryStatus = "PENDING" | "DONE";
+
+// GET /user/inquiries
+export interface UserInquiry {
+  id: number;
+  createdAt: string; // ISO date-time
+  type: InquiryType;
+  title: string;
+  content: string;
+  status: InquiryStatus;
+  answer: string | null;
+  answeredAt: string | null; // ISO date-time
+}
 
 export interface InquiryRequest {
   type: InquiryType;

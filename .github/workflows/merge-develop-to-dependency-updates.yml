@@ -1,0 +1,43 @@
+name: Merge develop into dependency-updates
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: merge-develop-to-dependency-updates
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: Merge develop
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout dependency-updates
+        uses: actions/checkout@v4
+        with:
+          ref: dependency-updates
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge develop into dependency-updates
+        run: |
+          git fetch origin develop dependency-updates
+
+          if git merge-base --is-ancestor origin/develop HEAD; then
+            echo "dependency-updates already includes develop."
+            exit 0
+          fi
+
+          git merge --no-ff origin/develop -m "Merge develop into dependency-updates"
+          git push origin HEAD:dependency-updates

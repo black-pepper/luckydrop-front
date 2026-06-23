@@ -1,0 +1,49 @@
+name: Open dependency updates PR
+
+on:
+  push:
+    branches:
+      - dependency-updates
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: open-dependency-updates-pr
+  cancel-in-progress: false
+
+jobs:
+  open-pr:
+    name: Open or update PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout dependency-updates
+        uses: actions/checkout@v4
+        with:
+          ref: dependency-updates
+          fetch-depth: 0
+
+      - name: Open or update PR to develop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing_pr="$(gh pr list \
+            --base develop \
+            --head dependency-updates \
+            --state open \
+            --json number \
+            --jq '.[0].number')"
+
+          if [ -n "$existing_pr" ]; then
+            echo "PR #${existing_pr} already exists."
+            exit 0
+          fi
+
+          gh pr create \
+            --base develop \
+            --head dependency-updates \
+            --title "Update dependencies" \
+            --body "Aggregated dependency updates from Dependabot. Review this PR to validate all dependency changes together."

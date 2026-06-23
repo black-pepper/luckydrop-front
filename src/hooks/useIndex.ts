@@ -5,6 +5,21 @@ import type { DrawParticipantParams, DrawResponse, DrawResultResponse, DrawStatu
 type AppState = "code" | "user" | "drawing" | "result" | "history";
 type HistoryReturnState = "user" | "result";
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = error.message;
+    if (typeof message === "string") {
+      return message;
+    }
+  }
+
+  return fallback;
+}
+
 function checkExpired(startAt: string | null, endAt: string | null): boolean {
   const now = new Date();
   const started = startAt ? now >= new Date(startAt) : true;
@@ -70,8 +85,8 @@ export function useIndex(contentCode: string) {
       setCanDraw(data.canDraw ?? false);
       setDrawStatus(data.drawStatus);
       setState("user");
-    } catch (e: any) {
-      setError(e.message ?? "사용할 수 없는 코드예요. 코드를 다시 확인해 주세요 🙏");
+    } catch (error) {
+      setError(getErrorMessage(error, "사용할 수 없는 코드예요. 코드를 다시 확인해 주세요 🙏"));
     } finally {
       setLoading(false);
     }
@@ -88,8 +103,8 @@ export function useIndex(contentCode: string) {
       setDrawResult(result);
       setRemaining(result.remainingCount ?? 0);
       setState("result");
-    } catch (e: any) {
-      setError(e.message ?? "뽑기 처리 중 오류가 발생했습니다");
+    } catch (error) {
+      setError(getErrorMessage(error, "뽑기 처리 중 오류가 발생했습니다"));
       setState("user");
     }
   }, [getDrawParams]);

@@ -27,6 +27,9 @@ import type {
   PageResponse,
   DrawResultDeliveryUpdateRequest,
   InquiryRequest,
+  UserInquiry,
+  ParticipationHistory,
+  ParticipationHistorySearchParams,
 } from "./types";
 import { supabase } from "@/lib/supabase";
 
@@ -41,10 +44,27 @@ export class ApiError extends Error {
 
 // ── Base request helpers ────────────────────────────────────────────────────
 
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
+async function request<T>(
+  url: string,
+  options?: RequestInit,
+  config?: { includeAuth?: boolean }
+): Promise<T> {
+  const headers = new Headers(options?.headers);
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (config?.includeAuth) {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+  }
+
   const res = await fetch(`${API_BASE_URL}${url}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers,
   });
 
   if (!res.ok) {
@@ -70,7 +90,11 @@ function buildDrawQuery({ contentCode, invitationCode }: DrawParticipantParams) 
 
 // 코드 검증 (mock findUser → API)
 export async function verifyCode(params: DrawParticipantParams): Promise<CodeVerifyResponse> {
-  return request<CodeVerifyResponse>(`/api/draw/verify?${buildDrawQuery(params)}`);
+  return request<CodeVerifyResponse>(
+    `/api/draw/verify?${buildDrawQuery(params)}`,
+    undefined,
+    { includeAuth: true }
+  );
 }
 
 // 뽑기 실행 (mock getRandomPrize → API)
@@ -78,7 +102,7 @@ export async function executeDraw(payload: DrawRequest): Promise<DrawResponse> {
   return request<DrawResponse>("/api/draw/execute", {
     method: "POST",
     body: JSON.stringify(payload satisfies DrawRequest),
-  });
+  }, { includeAuth: true });
 }
 
 // 보상 목록 조회 (mock rewards → API)
@@ -193,6 +217,22 @@ export async function withdrawUser(): Promise<void> {
   return authRequest<void>("/user", {
     method: "DELETE",
   });
+}
+
+// ── My Participation History API ───────────────────────────────────────────
+
+export async function getMyParticipationHistories(
+  params: ParticipationHistorySearchParams = {}
+): Promise<PageResponse<ParticipationHistory>> {
+  const sp = new URLSearchParams();
+  if (params.keyword?.trim()) sp.set("keyword", params.keyword.trim());
+  if (params.status) sp.set("status", params.status);
+  sp.set("page", String(params.page ?? 0));
+  sp.set("size", String(params.size ?? 20));
+
+  return authRequest<PageResponse<ParticipationHistory>>(
+    `/api/me/participation-histories?${sp.toString()}`
+  );
 }
 
 // ── Manage Reward API ──────────────────────────────────────────────────────
@@ -316,11 +356,19 @@ export async function getManageDrawResults(
 
 // ── Inquiry API ────────────────────────────────────────────────────────────
 
+export async function getUserInquiries(): Promise<UserInquiry[]> {
+  return authRequest<UserInquiry[]>("/user/inquiries");
+}
+
+export async function getUserInquiry(inquiryId: number): Promise<UserInquiry> {
+  return authRequest<UserInquiry>(`/user/inquiries/${inquiryId}`);
+}
+
 export async function createInquiry(payload: InquiryRequest): Promise<void> {
   return request<void>("/inquiries", {
     method: "POST",
     body: JSON.stringify(payload),
-  });
+  }, { includeAuth: true });
 }
 
 export async function updateDeliveryStatus(

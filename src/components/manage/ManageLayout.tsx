@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, PlusCircle, LogOut, Settings, Menu } from "lucide-react";
+import { History, LayoutDashboard, PlusCircle, LogOut, Settings, Menu, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
@@ -9,12 +9,62 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { to: "/manage", label: "대시보드", icon: LayoutDashboard },
   { to: "/manage/create", label: "콘텐츠 만들기", icon: PlusCircle },
+  { to: "/manage/history", label: "참여 내역", icon: History },
+  { to: "/manage/inquiries", label: "내 문의", icon: MessageCircle },
   { to: "/manage/settings", label: "설정", icon: Settings },
 ];
 
 interface Props {
   children: React.ReactNode;
 }
+
+interface SidebarNavProps {
+  pathname: string;
+  onLogout: () => void;
+  onNavigate?: () => void;
+}
+
+const SidebarNav = ({ pathname, onLogout, onNavigate }: SidebarNavProps) => (
+  <>
+    <Link
+      to="/manage"
+      onClick={onNavigate}
+      className="text-lg font-bold px-3 py-4 tracking-tight"
+    >
+      LuckyDrop
+    </Link>
+
+    <nav className="flex flex-col gap-1 mt-2 flex-1">
+      {navItems.map((item) => {
+        const active = pathname === item.to || (item.to !== "/manage" && pathname.startsWith(`${item.to}/`));
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+              active
+                ? "bg-white/15 text-white"
+                : "text-white/60 hover:text-white hover:bg-white/10"
+            )}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+
+    <button
+      onClick={onLogout}
+      className="flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white/80 transition-colors mt-auto"
+    >
+      <LogOut className="h-4 w-4" />
+      로그아웃
+    </button>
+  </>
+);
 
 const ManageLayout: React.FC<Props> = ({ children }) => {
   const { pathname } = useLocation();
@@ -37,53 +87,11 @@ const ManageLayout: React.FC<Props> = ({ children }) => {
     navigate("/");
   };
 
-  const SidebarNav = ({ onNavigate }: { onNavigate?: () => void }) => (
-    <>
-      <Link
-        to="/manage"
-        onClick={onNavigate}
-        className="text-lg font-bold px-3 py-4 tracking-tight"
-      >
-        LuckyDrop
-      </Link>
-
-      <nav className="flex flex-col gap-1 mt-2 flex-1">
-        {navItems.map((item) => {
-          const active = pathname === item.to;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={onNavigate}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                active
-                  ? "bg-white/15 text-white"
-                  : "text-white/60 hover:text-white hover:bg-white/10"
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white/80 transition-colors mt-auto"
-      >
-        <LogOut className="h-4 w-4" />
-        로그아웃
-      </button>
-    </>
-  );
-
   return (
     <div className="flex min-h-screen bg-manage-bg">
       {/* Sidebar (Desktop) */}
       <aside className="hidden md:flex flex-col w-56 shrink-0 p-4 gap-2 bg-manage-sidebar text-manage-sidebar-foreground h-screen sticky top-0">
-        <SidebarNav />
+        <SidebarNav pathname={pathname} onLogout={handleLogout} />
       </aside>
 
       {/* Mobile header with hamburger */}
@@ -106,7 +114,11 @@ const ManageLayout: React.FC<Props> = ({ children }) => {
             <SheetHeader className="sr-only">
               <SheetTitle>메뉴</SheetTitle>
             </SheetHeader>
-            <SidebarNav onNavigate={() => setMobileOpen(false)} />
+            <SidebarNav
+              pathname={pathname}
+              onLogout={handleLogout}
+              onNavigate={() => setMobileOpen(false)}
+            />
           </SheetContent>
         </Sheet>
         <Link to="/manage" className="font-bold text-base">LuckyDrop</Link>

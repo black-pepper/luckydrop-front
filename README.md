@@ -20,19 +20,22 @@ LuckDrop은 다양한 추첨 이벤트를 생성하고 관리할 수 있는 플�
 
 ## 기술 스택
 
-- **Framework**: [React 18](https://reactjs.org/) (Vite)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **UI/Styling**: [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/)
-- **State Management**: [TanStack Query (React Query)](https://tanstack.com/query/latest)
-- **Form Management**: [React Hook Form](https://react-hook-form.com/), [Zod](https://zod.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/) 6.x
+- **Framework / Runtime**: [React](https://react.dev/) 19 + [Vite](https://vite.dev/) 8
+- **Build Plugin**: `@vitejs/plugin-react-swc`
+- **Routing**: [React Router](https://reactrouter.com/) 7
+- **Server State**: [TanStack Query](https://tanstack.com/query/latest) 5
+- **UI/Styling**: [Tailwind CSS](https://tailwindcss.com/) 4, [shadcn/ui](https://ui.shadcn.com/) 스타일의 로컬 컴포넌트, [Radix UI](https://www.radix-ui.com/), [lucide-react](https://lucide.dev/)
+- **Form/Validation**: [React Hook Form](https://react-hook-form.com/) 7, [Zod](https://zod.dev/) 4
 - **Authentication**: [Supabase Auth](https://supabase.com/auth)
-- **HTTP Client**: Native [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) with custom wrappers
+- **HTTP Client**: Native [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) 기반 custom wrappers
+- **Testing**: [Vitest](https://vitest.dev/) 4, Testing Library, jsdom
 
 ## 시작하기
 
 ### 사전 준비 사항
 - Node.js 18.x 이상
-- npm 또는 yarn
+- npm 10.x (`packageManager`: `npm@10.9.2`)
 
 ### 설치 및 실행
 
@@ -55,6 +58,8 @@ LuckDrop은 다양한 추첨 이벤트를 생성하고 관리할 수 있는 플�
    - `VITE_API_BASE_URL`: 백엔드 API 서버 주소
    - `VITE_SUPABASE_URL`: Supabase 프로젝트 URL
    - `VITE_SUPABASE_ANON_KEY`: Supabase 익명 키
+   - `VITE_SUPABASE_REDIRECT_URL`: Supabase 인증 리다이렉트 URL
+   - `VITE_ADMIN_LOGIN_REDIRECT_PATH`: 관리자 로그인 후 이동 경로
 
 4. **개발 서버 실행**
    ```sh
@@ -70,6 +75,7 @@ src/
 │   ├── draw/        # 참여자 추첨 관련 컴포넌트
 │   ├── manage/      # 관리자 페이지 관련 컴포넌트
 │   └── ui/          # shadcn/ui 기반 기본 컴포넌트
+├── data/            # 개발/마이그레이션용 임시 데이터
 ├── hooks/           # 커스텀 훅
 ├── lib/             # 외부 라이브러리 설정 (Supabase, utils 등)
 ├── pages/           # 페이지 컴포넌트 (라우트 단위)
@@ -81,9 +87,15 @@ src/
 
 - `npm run dev`: 개발 서버 실행
 - `npm run build`: 프로덕션 빌드
+- `npm run build:dev`: development 모드 빌드
 - `npm run lint`: 린트 체크
+- `npm run preview`: 빌드 결과 미리보기
 - `npm run test`: 테스트 실행
+- `npm run test:watch`: 테스트 watch 모드 실행
 
 ## 라이선스
 
-본 프로젝트의 라이선스는 해당 기관/개인의 정책에 따릅니다.
+이 프로젝트는 [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0)에 따라 배포됩니다.
+
+비상업적 목적의 사용, 복제, 수정이 허용됩니다.  
+다만 작성자의 명시적인 허가 없이 상업적 목적의 사용은 금지됩니다.
