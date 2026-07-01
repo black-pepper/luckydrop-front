@@ -16,10 +16,11 @@ const ManageDashboard: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
     getManageContents()
-      .then(setContents)
+      .then((data) => {
+        setContents(data);
+        setError(null);
+      })
       .catch((e) => setError(e.message ?? "목록을 불러오지 못했습니다"))
       .finally(() => setLoading(false));
   }, []);
