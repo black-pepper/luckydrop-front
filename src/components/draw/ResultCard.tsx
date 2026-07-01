@@ -5,6 +5,7 @@ interface ResultCardProps {
   rewardImageUrl?: string;
   drawNo: number;
   remainingDraws: number;
+  cooldownRemainingSeconds?: number;
   onDrawAgain: () => void;
   onFinish: () => void;
   onViewHistory: () => void;
@@ -40,8 +41,9 @@ const gradeBg: Record<string, string> = {
   consolation: "from-lavender/30 to-muted/50",
 };
 
-const ResultCard = ({ rewardName, rewardImageUrl, drawNo, remainingDraws, onDrawAgain, onFinish, onViewHistory, onReset }: ResultCardProps) => {
+const ResultCard = ({ rewardName, rewardImageUrl, drawNo, remainingDraws, cooldownRemainingSeconds = 0, onDrawAgain, onFinish, onViewHistory, onReset }: ResultCardProps) => {
   const noDrawsLeft = remainingDraws <= 0;
+  const isCoolingDown = cooldownRemainingSeconds > 0;
   const emoji = guessEmoji(rewardName);
   const grade = guessGrade(rewardName);
 
@@ -84,10 +86,11 @@ const ResultCard = ({ rewardName, rewardImageUrl, drawNo, remainingDraws, onDraw
           </p>
           <button
             onClick={onViewHistory}
-            className="w-full h-12 rounded-2xl bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-all flex items-center justify-center gap-1.5"
+            disabled={isCoolingDown}
+            className="w-full h-12 rounded-2xl bg-primary/10 text-primary font-semibold hover:bg-primary/20 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-1.5"
           >
             <ClipboardList className="w-4 h-4" />
-            내 결과 보기
+            {isCoolingDown ? `${cooldownRemainingSeconds}초 후 다시 시도` : "내 결과 보기"}
           </button>
           <button
             onClick={onFinish}
@@ -101,17 +104,19 @@ const ResultCard = ({ rewardName, rewardImageUrl, drawNo, remainingDraws, onDraw
         <div className="w-full space-y-2">
           <button
             onClick={onDrawAgain}
-            className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-lg shadow-[var(--shadow-soft)] hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+            disabled={isCoolingDown}
+            className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-lg shadow-[var(--shadow-soft)] hover:brightness-105 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-1.5"
           >
             <RotateCcw className="w-4 h-4" />
-            다시 뽑기
+            {isCoolingDown ? `${cooldownRemainingSeconds}초 후 다시 시도` : "다시 뽑기"}
           </button>
           <button
             onClick={onViewHistory}
-            className="w-full h-11 rounded-2xl bg-primary/10 text-primary font-semibold text-sm hover:bg-primary/20 transition-all flex items-center justify-center gap-1.5"
+            disabled={isCoolingDown}
+            className="w-full h-11 rounded-2xl bg-primary/10 text-primary font-semibold text-sm hover:bg-primary/20 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-1.5"
           >
             <ClipboardList className="w-3.5 h-3.5" />
-            내 결과 보기
+            {isCoolingDown ? `${cooldownRemainingSeconds}초 후 다시 시도` : "내 결과 보기"}
           </button>
         </div>
       )}

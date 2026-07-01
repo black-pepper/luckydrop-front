@@ -34,12 +34,18 @@ import type {
 import { supabase } from "@/lib/supabase";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+export const RATE_LIMIT_STATUS = 429;
+export const RATE_LIMIT_MESSAGE = "요청이 많아 잠시 제한되었습니다. 잠시 후 다시 시도해주세요.";
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
     this.name = "ApiError";
   }
+}
+
+export function isRateLimitError(error: unknown): error is ApiError {
+  return error instanceof ApiError && error.status === RATE_LIMIT_STATUS;
 }
 
 // ── Base request helpers ────────────────────────────────────────────────────
