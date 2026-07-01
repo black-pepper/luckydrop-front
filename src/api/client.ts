@@ -26,8 +26,6 @@ import type {
   ParticipantCodeCreateRequest,
   ParticipantCodeBatchCreateRequest,
   ParticipantCodeUpdateRequest,
-  ParticipantCodeImportRequest,
-  ParticipantCodeImportResponse,
   ManageDrawResultResponse,
   ManageDrawResultsParams,
   PageResponse,
@@ -381,17 +379,18 @@ export async function deleteManageInvitationCode(invitationCodeId: number): Prom
 // ── Manage Participant Code API ────────────────────────────────────────────
 
 export async function getManageParticipantCodes(): Promise<ManageParticipantCodeResponse[]> {
-  return authRequest<ManageParticipantCodeResponse[]>("/api/manage/participant-codes");
+  const participantCodes = await authRequest<ManageParticipantCodeResponse[] | null>("/api/manage/participants");
+  return participantCodes ?? [];
 }
 
 export async function getManageParticipantCode(participantCodeId: number): Promise<ManageParticipantCodeResponse> {
-  return authRequest<ManageParticipantCodeResponse>(`/api/manage/participant-codes/${participantCodeId}`);
+  return authRequest<ManageParticipantCodeResponse>(`/api/manage/participants/${participantCodeId}`);
 }
 
 export async function createManageParticipantCode(
   payload: ParticipantCodeCreateRequest
 ): Promise<ManageParticipantCodeResponse> {
-  return authRequest<ManageParticipantCodeResponse>("/api/manage/participant-codes", {
+  return authRequest<ManageParticipantCodeResponse>("/api/manage/participants", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -400,7 +399,7 @@ export async function createManageParticipantCode(
 export async function createManageParticipantCodesBatch(
   payload: ParticipantCodeBatchCreateRequest
 ): Promise<ManageParticipantCodeResponse[]> {
-  return authRequest<ManageParticipantCodeResponse[]>("/api/manage/participant-codes/batch", {
+  return authRequest<ManageParticipantCodeResponse[]>("/api/manage/participants/batch", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -411,7 +410,7 @@ export async function updateManageParticipantCode(
   payload: ParticipantCodeUpdateRequest
 ): Promise<ManageParticipantCodeResponse> {
   return authRequest<ManageParticipantCodeResponse>(
-    `/api/manage/participant-codes/${participantCodeId}`,
+    `/api/manage/participants/${participantCodeId}`,
     {
       method: "PUT",
       body: JSON.stringify(payload),
@@ -420,16 +419,7 @@ export async function updateManageParticipantCode(
 }
 
 export async function deleteManageParticipantCode(participantCodeId: number): Promise<void> {
-  return authRequest<void>(`/api/manage/participant-codes/${participantCodeId}`, { method: "DELETE" });
-}
-
-export async function importParticipantCodesToInvitationCodes(
-  payload: ParticipantCodeImportRequest
-): Promise<ParticipantCodeImportResponse> {
-  return authRequest<ParticipantCodeImportResponse>("/api/manage/invitation-codes/import-participant-codes", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return authRequest<void>(`/api/manage/participants/${participantCodeId}`, { method: "DELETE" });
 }
 
 // ── Manage Draw Results API ─────────────────────────────────────────────────

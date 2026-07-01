@@ -36,7 +36,6 @@ import {
   createManageInvitationCode,
   updateManageInvitationCode,
   deleteManageInvitationCode,
-  importParticipantCodesToInvitationCodes,
   getManageParticipantCodes,
   getManageDrawResults,
   updateDeliveryStatus,
@@ -1019,24 +1018,6 @@ const ManageContent: React.FC = () => {
     }
   };
 
-  const handleImportParticipantCodes = async () => {
-    if (!contentCode) return;
-    setImportingParticipantCodes(true);
-    setParticipantCodeImportMessage(null);
-    try {
-      const result = await importParticipantCodesToInvitationCodes({ contentCode });
-      const latest = await getManageInvitationCodesByContent(contentCode);
-      setInviteCodes(latest);
-      setParticipantCodeImportMessage(
-        `참여자 리스트 ${result.createdCount}개를 추가했고, 기존 코드 ${result.skippedCount}개는 건너뛰었습니다.`
-      );
-    } catch (error) {
-      setParticipantCodeImportMessage(getErrorMessage(error, "참여자 리스트를 불러오지 못했습니다"));
-    } finally {
-      setImportingParticipantCodes(false);
-    }
-  };
-
   const handleLoadParticipantCodesToForms = async () => {
     setImportingParticipantCodes(true);
     setParticipantCodeImportMessage(null);
@@ -1347,16 +1328,6 @@ const ManageContent: React.FC = () => {
                 >
                   <ListPlus className="h-3.5 w-3.5" />
                   {importingParticipantCodes ? "불러오는 중..." : "리스트 불러오기"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1"
-                  onClick={handleImportParticipantCodes}
-                  disabled={importingParticipantCodes}
-                >
-                  <ListPlus className="h-3.5 w-3.5" />
-                  {importingParticipantCodes ? "불러오는 중..." : "리스트 추가"}
                 </Button>
                 <Button
                   size="sm"
