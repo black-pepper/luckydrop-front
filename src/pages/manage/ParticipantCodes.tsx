@@ -15,7 +15,7 @@ import {
   updateManageParticipantCode,
 } from "@/api/client";
 import type { ManageParticipantCodeResponse } from "@/api/types";
-import { Check, Clipboard, Pencil, Plus, RefreshCw, Save, Search, Trash2, X } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Save, Search, Trash2, X } from "lucide-react";
 
 interface ParticipantForm {
   participantName: string;
@@ -64,13 +64,12 @@ const ParticipantCodes: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<ParticipantForm>(emptyForm);
   const [savingId, setSavingId] = useState<number | null>(null);
-  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const loadParticipantCodes = () => {
     setLoading(true);
     setError(null);
     getManageParticipantCodes()
-      .then(setParticipantCodes)
+      .then((items) => setParticipantCodes(Array.isArray(items) ? items : []))
       .catch((e) => setError(getErrorMessage(e, "참여자 리스트를 불러오지 못했습니다")))
       .finally(() => setLoading(false));
   };
@@ -83,13 +82,14 @@ const ParticipantCodes: React.FC = () => {
     const normalized = keyword.trim().toLowerCase();
     if (!normalized) return participantCodes;
     return participantCodes.filter((item) =>
-      [item.code, item.participantName, item.memo ?? ""].some((value) =>
+      [item.participantName, item.memo ?? ""].some((value) =>
         value.toLowerCase().includes(normalized)
       )
     );
   }, [keyword, participantCodes]);
 
   const batchItems = useMemo(() => parseBatchText(batchText), [batchText]);
+  const emptyMessage = keyword.trim() ? "검색 결과가 없습니다" : "참여자 리스트가 없습니다";
 
   const handleCreate = async () => {
     if (!form.participantName.trim()) {
@@ -123,7 +123,7 @@ const ParticipantCodes: React.FC = () => {
     setBatchCreating(true);
     setBatchError(null);
     try {
-      const created = await createManageParticipantCodesBatch({ participantCodes: batchItems });
+      const created = await createManageParticipantCodesBatch({ participants: batchItems });
       setParticipantCodes((prev) => [...created, ...prev]);
       setBatchText("");
       toast({ title: `${created.length}명을 추가했습니다` });
@@ -166,7 +166,7 @@ const ParticipantCodes: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("참여자 추천코드를 삭제하시겠습니까?")) return;
+    if (!window.confirm("참여자를 삭제하시겠습니까?")) return;
 
     try {
       await deleteManageParticipantCode(id);
@@ -181,18 +181,12 @@ const ParticipantCodes: React.FC = () => {
     }
   };
 
-  const handleCopy = (item: ManageParticipantCodeResponse) => {
-    navigator.clipboard.writeText(item.code).catch(() => {});
-    setCopiedId(item.id);
-    setTimeout(() => setCopiedId(null), 1500);
-  };
-
   return (
     <ManageLayout>
       <div className="flex flex-col gap-2 mb-6">
         <h1 className="text-2xl font-bold text-foreground">참여자 리스트 관리</h1>
         <p className="text-sm text-muted-foreground">
-          참여자별 추천코드를 미리 생성하고, 콘텐츠 초대 코드 단계에서 불러올 수 있습니다.
+          참여자 리스트를 미리 생성하고, 콘텐츠 초대 코드 단계에서 불러올 수 있습니다.
         </p>
       </div>
 
@@ -201,13 +195,13 @@ const ParticipantCodes: React.FC = () => {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <CardTitle className="text-base">추천코드 목록</CardTitle>
+                <CardTitle className="text-base">참여자 리스트</CardTitle>
                 <div className="flex gap-2">
                   <div className="relative flex-1 sm:w-64">
                     <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       className="pl-8"
-                      placeholder="이름, 코드, 메모 검색"
+                      placeholder="이름, 메모 검색"
                       value={keyword}
                       onChange={(e) => setKeyword(e.target.value)}
                     />
@@ -225,7 +219,6 @@ const ParticipantCodes: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-32">코드</TableHead>
                       <TableHead className="w-44">참여자 이름</TableHead>
                       <TableHead>메모</TableHead>
                       <TableHead className="w-32 text-right">관리</TableHead>
@@ -234,15 +227,14 @@ const ParticipantCodes: React.FC = () => {
                   <TableBody>
                     {filtered.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground py-10">
-                          표시할 참여자가 없습니다
+                        <TableCell colSpan={3} className="text-center text-muted-foreground py-10">
+                          {emptyMessage}
                         </TableCell>
                       </TableRow>
                     )}
                     {filtered.map((item) =>
                       editingId === item.id ? (
                         <TableRow key={item.id}>
-                          <TableCell className="font-mono text-xs">{item.code}</TableCell>
                           <TableCell>
                             <Input
                               value={editForm.participantName}
@@ -275,14 +267,10 @@ const ParticipantCodes: React.FC = () => {
                         </TableRow>
                       ) : (
                         <TableRow key={item.id}>
-                          <TableCell className="font-mono text-xs font-semibold">{item.code}</TableCell>
                           <TableCell className="font-medium">{item.participantName}</TableCell>
                           <TableCell className="text-muted-foreground">{item.memo || "-"}</TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-1">
-                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleCopy(item)}>
-                                {copiedId === item.id ? <Check className="h-4 w-4 text-primary" /> : <Clipboard className="h-4 w-4" />}
-                              </Button>
                               <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(item)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>

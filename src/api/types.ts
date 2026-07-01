@@ -243,42 +243,31 @@ export interface InvitationCodeUpdateRequest {
 }
 
 // Manage participant code types
-// GET /api/manage/participant-codes
-// GET /api/manage/participant-codes/{id}
+// GET /api/manage/participants
+// GET /api/manage/participants/{id}
 export interface ManageParticipantCodeResponse {
   id: number;
-  code: string;
   participantName: string;
   memo?: string | null;
   createdAt: string; // ISO date-time
   updatedAt: string; // ISO date-time
 }
 
-// POST /api/manage/participant-codes
+// POST /api/manage/participants
 export interface ParticipantCodeCreateRequest {
   participantName: string;
   memo?: string;
 }
 
-// POST /api/manage/participant-codes/batch
+// POST /api/manage/participants/batch
 export interface ParticipantCodeBatchCreateRequest {
-  participantCodes: ParticipantCodeCreateRequest[];
+  participants: ParticipantCodeCreateRequest[];
 }
 
-// PUT /api/manage/participant-codes/{id}
+// PUT /api/manage/participants/{id}
 export interface ParticipantCodeUpdateRequest {
   participantName: string;
   memo?: string;
-}
-
-// POST /api/manage/invitation-codes/import-participant-codes
-export interface ParticipantCodeImportRequest {
-  contentCode: string;
-}
-
-export interface ParticipantCodeImportResponse {
-  createdCount: number;
-  skippedCount: number;
 }
 
 // Spring Page 래퍼 (UI에서 사용하는 필드만)

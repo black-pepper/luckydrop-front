@@ -142,32 +142,28 @@ const CreateContent: React.FC = () => {
     setSubmitError(null);
     try {
       const participantCodes = await getManageParticipantCodes();
-      let skippedCount = 0;
       setCodes((prev) => {
         const existingCodes = new Set(prev.map((code) => code.code.trim()).filter(Boolean));
-        const imported = participantCodes
-          .filter((participantCode) => {
-            if (existingCodes.has(participantCode.code)) {
-              skippedCount += 1;
-              return false;
-            }
-            existingCodes.add(participantCode.code);
-            return true;
-          })
-          .map((participantCode, index) => ({
+        const imported = participantCodes.map((participantCode, index) => {
+          let code = generateCode();
+          while (existingCodes.has(code)) {
+            code = generateCode();
+          }
+          existingCodes.add(code);
+
+          return {
             id: Date.now() + index,
-            code: participantCode.code,
+            code,
             name: participantCode.participantName,
             allowedDrawCount: "1",
-          }));
+          };
+        });
 
         return [...prev, ...imported];
       });
 
       if (participantCodes.length === 0) {
         setSubmitError("불러올 참여자 리스트가 없습니다.");
-      } else if (skippedCount > 0) {
-        setSubmitError(`이미 추가된 코드 ${skippedCount}개를 제외하고 불러왔습니다.`);
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "참여자 리스트를 불러오지 못했습니다");
