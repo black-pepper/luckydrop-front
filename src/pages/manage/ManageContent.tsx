@@ -16,7 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save, CalendarIcon, Search, RotateCcw, ChevronDown } from "lucide-react";
+import { Copy, ArrowLeft, Pencil, Plus, Trash2, X, Check, ImagePlus, Save, CalendarIcon, Search, RotateCcw, ChevronDown, ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateCode } from "@/lib/utils";
 import { getContentTypeLabel } from "@/lib/contentTypeConstants";
@@ -36,6 +36,8 @@ import {
   createManageInvitationCode,
   updateManageInvitationCode,
   deleteManageInvitationCode,
+  importParticipantCodesToInvitationCodes,
+  getManageParticipantCodes,
   getManageDrawResults,
   updateDeliveryStatus,
 } from "@/api/client";
@@ -68,6 +70,13 @@ interface InvitationCodeFormState {
   name: string;
   allowedDrawCount: string;
   active: boolean;
+}
+
+interface PendingInvitationCodeFormState {
+  id: number;
+  form: InvitationCodeFormState;
+  saving: boolean;
+  error: string | null;
 }
 
 const emptyCodeForm = (): InvitationCodeFormState => ({
@@ -448,12 +457,11 @@ const ManageContent: React.FC = () => {
   const [inviteCodes, setInviteCodes] = useState<ManageInvitationCodeResponse[]>([]);
   const [inviteCodesLoading, setInviteCodesLoading] = useState(false);
   const [inviteCodesError, setInviteCodesError] = useState<string | null>(null);
+  const [importingParticipantCodes, setImportingParticipantCodes] = useState(false);
+  const [participantCodeImportMessage, setParticipantCodeImportMessage] = useState<string | null>(null);
 
-  // Add invitation code form
-  const [showAddCodeForm, setShowAddCodeForm] = useState(false);
-  const [addCodeForm, setAddCodeForm] = useState<InvitationCodeFormState>(emptyCodeForm());
-  const [addingCode, setAddingCode] = useState(false);
-  const [addCodeError, setAddCodeError] = useState<string | null>(null);
+  // Add invitation code forms
+  const [addCodeForms, setAddCodeForms] = useState<PendingInvitationCodeFormState[]>([]);
 
   // Edit invitation code form
   const [editingCodeId, setEditingCodeId] = useState<number | null>(null);
@@ -482,6 +490,44 @@ const ManageContent: React.FC = () => {
 
   // Applied filters (검색 클릭 시 적용)
   const [appliedFilters, setAppliedFilters] = useState<AppliedFilters>(emptyAppliedFilters);
+
+  const makePendingCodeForm = (
+    form: InvitationCodeFormState,
+    offset = 0
+  ): PendingInvitationCodeFormState => ({
+    id: Date.now() + offset,
+    form,
+    saving: false,
+    error: null,
+  });
+
+  const generateUniqueInviteCode = (existingCodes: Set<string>) => {
+    let code = generateCode();
+    let attempts = 0;
+
+    while (existingCodes.has(code) && attempts < 100) {
+      code = generateCode();
+      attempts += 1;
+    }
+
+    existingCodes.add(code);
+    return code;
+  };
+
+  const updateAddCodeForm = (
+    formId: number,
+    updater: (form: InvitationCodeFormState) => InvitationCodeFormState
+  ) => {
+    setAddCodeForms((prev) =>
+      prev.map((item) =>
+        item.id === formId ? { ...item, form: updater(item.form), error: null } : item
+      )
+    );
+  };
+
+  const removeAddCodeForm = (formId: number) => {
+    setAddCodeForms((prev) => prev.filter((item) => item.id !== formId));
+  };
 
   useEffect(() => {
     if (!contentCode) return;
@@ -791,37 +837,46 @@ const ManageContent: React.FC = () => {
     }
   };
 
-  const handleAddCode = async () => {
+  const handleAddCode = async (formId: number) => {
     if (!contentCode) return;
+    const target = addCodeForms.find((item) => item.id === formId);
+    if (!target) return;
+
     const allowedDrawCountError = getPositiveIntegerError(
-      addCodeForm.allowedDrawCount,
+      target.form.allowedDrawCount,
       "허용 횟수를 입력해주세요.",
       "허용 횟수는 1 이상의 숫자여야 합니다."
     );
     if (allowedDrawCountError) {
-      setAddCodeError(allowedDrawCountError);
+      setAddCodeForms((prev) =>
+        prev.map((item) => item.id === formId ? { ...item, error: allowedDrawCountError } : item)
+      );
       return;
     }
 
-    setAddingCode(true);
-    setAddCodeError(null);
+    setAddCodeForms((prev) =>
+      prev.map((item) => item.id === formId ? { ...item, saving: true, error: null } : item)
+    );
     try {
-      const allowedDrawCount = parsePositiveInteger(addCodeForm.allowedDrawCount);
+      const allowedDrawCount = parsePositiveInteger(target.form.allowedDrawCount);
 
       const created = await createManageInvitationCode({
         contentCode,
-        code: addCodeForm.code,
-        name: addCodeForm.name || undefined,
+        code: target.form.code,
+        name: target.form.name || undefined,
         allowedDrawCount: allowedDrawCount.kind === "valid" ? allowedDrawCount.value : 1,
         active: true,
       });
       setInviteCodes((prev) => [...prev, created]);
-      setShowAddCodeForm(false);
-      setAddCodeForm(emptyCodeForm());
+      removeAddCodeForm(formId);
     } catch (error) {
-      setAddCodeError(getErrorMessage(error, "추첨 코드 추가에 실패했습니다"));
-    } finally {
-      setAddingCode(false);
+      setAddCodeForms((prev) =>
+        prev.map((item) =>
+          item.id === formId
+            ? { ...item, saving: false, error: getErrorMessage(error, "추첨 코드 추가에 실패했습니다") }
+            : item
+        )
+      );
     }
   };
 
@@ -863,6 +918,61 @@ const ManageContent: React.FC = () => {
       setInviteCodes((prev) => prev.filter((c) => c.id !== invitationCodeId));
     } catch (error) {
       alert(getErrorMessage(error, "삭제에 실패했습니다"));
+    }
+  };
+
+  const handleImportParticipantCodes = async () => {
+    if (!contentCode) return;
+    setImportingParticipantCodes(true);
+    setParticipantCodeImportMessage(null);
+    try {
+      const result = await importParticipantCodesToInvitationCodes({ contentCode });
+      const latest = await getManageInvitationCodesByContent(contentCode);
+      setInviteCodes(latest);
+      setParticipantCodeImportMessage(
+        `참여자 리스트 ${result.createdCount}개를 추가했고, 기존 코드 ${result.skippedCount}개는 건너뛰었습니다.`
+      );
+    } catch (error) {
+      setParticipantCodeImportMessage(getErrorMessage(error, "참여자 리스트를 불러오지 못했습니다"));
+    } finally {
+      setImportingParticipantCodes(false);
+    }
+  };
+
+  const handleLoadParticipantCodesToForms = async () => {
+    setImportingParticipantCodes(true);
+    setParticipantCodeImportMessage(null);
+    try {
+      const participantCodes = await getManageParticipantCodes();
+
+      if (participantCodes.length === 0) {
+        setParticipantCodeImportMessage("불러올 참여자 리스트가 없습니다.");
+        return;
+      }
+
+      const existingCodes = new Set([
+        ...inviteCodes.map((code) => code.code.trim()).filter(Boolean),
+        ...addCodeForms.map((item) => item.form.code.trim()).filter(Boolean),
+      ]);
+
+      const importedForms = participantCodes.map((participantCode, index) =>
+        makePendingCodeForm(
+          {
+            ...emptyCodeForm(),
+            code: generateUniqueInviteCode(existingCodes),
+            name: participantCode.participantName,
+            allowedDrawCount: "1",
+          },
+          index
+        )
+      );
+
+      setAddCodeForms((prev) => [...prev, ...importedForms]);
+      setParticipantCodeImportMessage(`참여자 ${participantCodes.length}명의 코드 입력 폼을 불러왔습니다.`);
+    } catch (error) {
+      setParticipantCodeImportMessage(getErrorMessage(error, "참여자 리스트를 불러오지 못했습니다"));
+    } finally {
+      setImportingParticipantCodes(false);
     }
   };
 
@@ -1129,24 +1239,65 @@ const ManageContent: React.FC = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base">추첨 코드 목록</CardTitle>
-              {!showAddCodeForm && (
-                <Button size="sm" variant="outline" className="gap-1" onClick={() => { setShowAddCodeForm(true); setAddCodeForm({ ...emptyCodeForm(), code: generateCode() }); setAddCodeError(null); }}>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  onClick={handleLoadParticipantCodesToForms}
+                  disabled={importingParticipantCodes}
+                >
+                  <ListPlus className="h-3.5 w-3.5" />
+                  {importingParticipantCodes ? "불러오는 중..." : "리스트 불러오기"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  onClick={handleImportParticipantCodes}
+                  disabled={importingParticipantCodes}
+                >
+                  <ListPlus className="h-3.5 w-3.5" />
+                  {importingParticipantCodes ? "불러오는 중..." : "리스트 추가"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  onClick={() => {
+                    const existingCodes = new Set([
+                      ...inviteCodes.map((code) => code.code.trim()).filter(Boolean),
+                      ...addCodeForms.map((item) => item.form.code.trim()).filter(Boolean),
+                    ]);
+                    setAddCodeForms((prev) => [
+                      ...prev,
+                      makePendingCodeForm({
+                        ...emptyCodeForm(),
+                        code: generateUniqueInviteCode(existingCodes),
+                      }),
+                    ]);
+                  }}
+                >
                   <Plus className="h-3.5 w-3.5" /> 추가
                 </Button>
-              )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-3 pt-2">
-              {showAddCodeForm && (
-                <InvitationCodeFormCard
-                  title="새 추첨 코드 추가"
-                  form={addCodeForm}
-                  onChange={setAddCodeForm}
-                  onSave={handleAddCode}
-                  onCancel={() => { setShowAddCodeForm(false); setAddCodeError(null); }}
-                  saving={addingCode}
-                  error={addCodeError}
-                />
+              {participantCodeImportMessage && (
+                <p className="text-sm text-muted-foreground">{participantCodeImportMessage}</p>
               )}
+              {addCodeForms.map((item, index) => (
+                <InvitationCodeFormCard
+                  key={item.id}
+                  title={addCodeForms.length > 1 ? `새 추첨 코드 추가 #${index + 1}` : "새 추첨 코드 추가"}
+                  form={item.form}
+                  onChange={(form) => updateAddCodeForm(item.id, () => form)}
+                  onSave={() => handleAddCode(item.id)}
+                  onCancel={() => removeAddCodeForm(item.id)}
+                  saving={item.saving}
+                  error={item.error}
+                />
+              ))}
               {inviteCodesLoading && (
                 <p className="text-center text-muted-foreground py-6 text-sm">불러오는 중...</p>
               )}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { History, LayoutDashboard, PlusCircle, LogOut, Settings, Menu, MessageCircle } from "lucide-react";
+import { History, LayoutDashboard, PlusCircle, LogOut, Settings, Menu, MessageCircle, UsersRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { to: "/manage", label: "대시보드", icon: LayoutDashboard },
   { to: "/manage/create", label: "콘텐츠 만들기", icon: PlusCircle },
+  { to: "/manage/participant-codes", label: "참여자 리스트", icon: UsersRound },
   { to: "/manage/history", label: "참여 내역", icon: History },
   { to: "/manage/inquiries", label: "내 문의", icon: MessageCircle },
   { to: "/manage/settings", label: "설정", icon: Settings },
