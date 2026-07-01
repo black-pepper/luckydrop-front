@@ -22,6 +22,7 @@ const InquiriesList = lazy(() => import("./pages/manage/InquiriesList"));
 const InquiryNew = lazy(() => import("./pages/manage/InquiryNew"));
 const InquiryDetail = lazy(() => import("./pages/manage/InquiryDetail"));
 const ParticipationHistory = lazy(() => import("./pages/manage/ParticipationHistory"));
+const ParticipantCodes = lazy(() => import("./pages/manage/ParticipantCodes"));
 
 const RouteFallback = () => (
   <div className="min-h-screen bg-background flex items-center justify-center px-4">
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/manage" element={<ProtectedRoute><ManageDashboard /></ProtectedRoute>} />
             <Route path="/manage/create" element={<ProtectedRoute><CreateContent /></ProtectedRoute>} />
             <Route path="/manage/settings" element={<ProtectedRoute><ManageSettings /></ProtectedRoute>} />
+            <Route path="/manage/participant-codes" element={<ProtectedRoute><ParticipantCodes /></ProtectedRoute>} />
             <Route path="/manage/inquiries" element={<ProtectedRoute><InquiriesList /></ProtectedRoute>} />
             <Route path="/manage/inquiries/new" element={<ProtectedRoute><InquiryNew /></ProtectedRoute>} />
             <Route path="/manage/inquiries/:id" element={<ProtectedRoute><InquiryDetail /></ProtectedRoute>} />

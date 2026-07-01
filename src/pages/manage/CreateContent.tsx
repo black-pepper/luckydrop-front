@@ -8,8 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { StateToggleButton } from "@/components/ui/state-toggle-button";
-import { Trash2, Plus, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
-import { createManageContent, createManageRewards, createManageInvitationCodesBatch } from "@/api/client";
+import { Trash2, Plus, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus, ListPlus } from "lucide-react";
+import { createManageContent, createManageRewards, createManageInvitationCodesBatch, getManageParticipantCodes } from "@/api/client";
 import { generateCode } from "@/lib/utils";
 import type { ContentType } from "@/data/manageMockData";
 import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
@@ -111,6 +111,7 @@ const CreateContent: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [importingParticipantCodes, setImportingParticipantCodes] = useState(false);
 
   const clearFieldError = (field: string) => {
     setValidationErrors((prev) => {
@@ -134,6 +135,45 @@ const CreateContent: React.FC = () => {
   const updateCode = (id: number, field: keyof CodeRow, value: string) => {
     clearFieldError(`codes.${id}.${field}`);
     setCodes((c) => c.map((x) => (x.id === id ? { ...x, [field]: value } : x)));
+  };
+
+  const importParticipantCodes = async () => {
+    setImportingParticipantCodes(true);
+    setSubmitError(null);
+    try {
+      const participantCodes = await getManageParticipantCodes();
+      let skippedCount = 0;
+      setCodes((prev) => {
+        const existingCodes = new Set(prev.map((code) => code.code.trim()).filter(Boolean));
+        const imported = participantCodes
+          .filter((participantCode) => {
+            if (existingCodes.has(participantCode.code)) {
+              skippedCount += 1;
+              return false;
+            }
+            existingCodes.add(participantCode.code);
+            return true;
+          })
+          .map((participantCode, index) => ({
+            id: Date.now() + index,
+            code: participantCode.code,
+            name: participantCode.participantName,
+            allowedDrawCount: "1",
+          }));
+
+        return [...prev, ...imported];
+      });
+
+      if (participantCodes.length === 0) {
+        setSubmitError("불러올 참여자 리스트가 없습니다.");
+      } else if (skippedCount > 0) {
+        setSubmitError(`이미 추가된 코드 ${skippedCount}개를 제외하고 불러왔습니다.`);
+      }
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "참여자 리스트를 불러오지 못했습니다");
+    } finally {
+      setImportingParticipantCodes(false);
+    }
   };
 
   const validateStep = (targetStep: number) => {
@@ -635,6 +675,15 @@ const CreateContent: React.FC = () => {
             <div className="flex gap-2 flex-wrap">
               <Button variant="outline" className="gap-1.5" onClick={addCode}>
                 <Plus className="h-4 w-4" /> 코드 추가
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-1.5"
+                onClick={importParticipantCodes}
+                disabled={importingParticipantCodes}
+              >
+                <ListPlus className="h-4 w-4" />
+                {importingParticipantCodes ? "불러오는 중..." : "리스트 추가"}
               </Button>
             </div>
 

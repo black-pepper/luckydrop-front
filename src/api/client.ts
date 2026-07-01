@@ -22,6 +22,12 @@ import type {
   InvitationCodeCreateRequest,
   InvitationCodeBatchCreateRequest,
   InvitationCodeUpdateRequest,
+  ManageParticipantCodeResponse,
+  ParticipantCodeCreateRequest,
+  ParticipantCodeBatchCreateRequest,
+  ParticipantCodeUpdateRequest,
+  ParticipantCodeImportRequest,
+  ParticipantCodeImportResponse,
   ManageDrawResultResponse,
   ManageDrawResultsParams,
   PageResponse,
@@ -162,6 +168,14 @@ async function authRequest<T>(url: string, options?: RequestInit): Promise<T> {
       res.status,
       body?.message ?? `요청 실패 (${res.status})`,
       parseRetryAfterSeconds(res.headers.get("Retry-After")),
+    );
+  }
+
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new ApiError(
+      500,
+      "API 서버 응답이 JSON이 아닙니다. VITE_API_BASE_URL이 백엔드 서버 주소로 설정되어 있는지 확인해주세요."
     );
   }
 
@@ -362,6 +376,60 @@ export async function updateManageInvitationCode(
 
 export async function deleteManageInvitationCode(invitationCodeId: number): Promise<void> {
   return authRequest<void>(`/api/manage/invitation-codes/${invitationCodeId}`, { method: "DELETE" });
+}
+
+// ── Manage Participant Code API ────────────────────────────────────────────
+
+export async function getManageParticipantCodes(): Promise<ManageParticipantCodeResponse[]> {
+  return authRequest<ManageParticipantCodeResponse[]>("/api/manage/participant-codes");
+}
+
+export async function getManageParticipantCode(participantCodeId: number): Promise<ManageParticipantCodeResponse> {
+  return authRequest<ManageParticipantCodeResponse>(`/api/manage/participant-codes/${participantCodeId}`);
+}
+
+export async function createManageParticipantCode(
+  payload: ParticipantCodeCreateRequest
+): Promise<ManageParticipantCodeResponse> {
+  return authRequest<ManageParticipantCodeResponse>("/api/manage/participant-codes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createManageParticipantCodesBatch(
+  payload: ParticipantCodeBatchCreateRequest
+): Promise<ManageParticipantCodeResponse[]> {
+  return authRequest<ManageParticipantCodeResponse[]>("/api/manage/participant-codes/batch", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateManageParticipantCode(
+  participantCodeId: number,
+  payload: ParticipantCodeUpdateRequest
+): Promise<ManageParticipantCodeResponse> {
+  return authRequest<ManageParticipantCodeResponse>(
+    `/api/manage/participant-codes/${participantCodeId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function deleteManageParticipantCode(participantCodeId: number): Promise<void> {
+  return authRequest<void>(`/api/manage/participant-codes/${participantCodeId}`, { method: "DELETE" });
+}
+
+export async function importParticipantCodesToInvitationCodes(
+  payload: ParticipantCodeImportRequest
+): Promise<ParticipantCodeImportResponse> {
+  return authRequest<ParticipantCodeImportResponse>("/api/manage/invitation-codes/import-participant-codes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 // ── Manage Draw Results API ─────────────────────────────────────────────────
