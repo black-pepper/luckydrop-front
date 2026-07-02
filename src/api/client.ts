@@ -38,7 +38,11 @@ export const RATE_LIMIT_STATUS = 429;
 export const RATE_LIMIT_MESSAGE = "요청이 많아 잠시 제한되었습니다. 잠시 후 다시 시도해주세요.";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+    public retryAfterSeconds?: number,
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -46,6 +50,17 @@ export class ApiError extends Error {
 
 export function isRateLimitError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.status === RATE_LIMIT_STATUS;
+}
+
+export function parseRetryAfterSeconds(retryAfter: string | null): number | undefined {
+  if (!retryAfter) return undefined;
+
+  const seconds = Number(retryAfter);
+  if (!Number.isInteger(seconds) || seconds <= 0) {
+    return undefined;
+  }
+
+  return seconds;
 }
 
 // ── Base request helpers ────────────────────────────────────────────────────
@@ -75,7 +90,11 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new ApiError(res.status, body?.message ?? `요청 실패 (${res.status})`);
+    throw new ApiError(
+      res.status,
+      body?.message ?? `요청 실패 (${res.status})`,
+      parseRetryAfterSeconds(res.headers.get("Retry-After")),
+    );
   }
 
   const json: ApiResponse<T> = await res.json();
@@ -139,7 +158,11 @@ async function authRequest<T>(url: string, options?: RequestInit): Promise<T> {
       // 토큰 만료 시에만 signOut. SIGNED_OUT 이벤트 → ProtectedRoute가 /manage/login으로 리다이렉트.
       await supabase.auth.signOut();
     }
-    throw new ApiError(res.status, body?.message ?? `요청 실패 (${res.status})`);
+    throw new ApiError(
+      res.status,
+      body?.message ?? `요청 실패 (${res.status})`,
+      parseRetryAfterSeconds(res.headers.get("Retry-After")),
+    );
   }
 
   const json: ApiResponse<T> = await res.json();

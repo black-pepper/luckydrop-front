@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { verifyCode, executeDraw, getResults, getParticipantContentDetail, isRateLimitError, RATE_LIMIT_MESSAGE } from "@/api/client";
+import { verifyCode, executeDraw, getResults, getParticipantContentDetail, isRateLimitError } from "@/api/client";
 import type { DrawParticipantParams, DrawResponse, DrawResultResponse, DrawStatus } from "@/api/types";
 import { toast } from "@/hooks/use-toast";
 
@@ -54,12 +54,14 @@ export function useIndex(contentCode: string) {
   const [historyReturnState, setHistoryReturnState] = useState<HistoryReturnState>("user");
   const executingDrawRef = useRef(false);
 
-  const startRateLimitCooldown = useCallback(() => {
-    const nextCooldownUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+  const startRateLimitCooldown = useCallback((retryAfterSeconds?: number) => {
+    const cooldownSeconds = retryAfterSeconds ?? Math.ceil(RATE_LIMIT_COOLDOWN_MS / 1000);
+    const cooldownMs = cooldownSeconds * 1000;
+    const nextCooldownUntil = Date.now() + cooldownMs;
     setCooldownUntil(nextCooldownUntil);
-    setCooldownRemainingSeconds(Math.ceil(RATE_LIMIT_COOLDOWN_MS / 1000));
+    setCooldownRemainingSeconds(cooldownSeconds);
     toast({
-      description: RATE_LIMIT_MESSAGE,
+      description: `${cooldownSeconds}초 후 다시 시도해주세요.`,
       variant: "destructive",
     });
   }, []);
@@ -69,7 +71,7 @@ export function useIndex(contentCode: string) {
       return false;
     }
 
-    startRateLimitCooldown();
+    startRateLimitCooldown(error.retryAfterSeconds);
     return true;
   }, [startRateLimitCooldown]);
 
