@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from "react";
+import { ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Footer from "@/components/Footer";
@@ -171,17 +171,11 @@ const renderBody = (body: ReactNode) => {
 const Policy = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<"terms" | "privacy">("terms");
-
-  useEffect(() => {
-    if (tabParam === "privacy" || tabParam === "terms") {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam]);
+  const activeTab: "terms" | "privacy" =
+    tabParam === "privacy" || tabParam === "terms" ? tabParam : "terms";
 
   const handleTabChange = (value: string) => {
     const nextTab = value as "terms" | "privacy";
-    setActiveTab(nextTab);
     setSearchParams({ tab: nextTab });
   };
 
