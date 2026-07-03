@@ -19,6 +19,10 @@ const ManageLogin: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const configurationError = isSupabaseConfigured
+    ? null
+    : "Supabase 환경 변수가 설정되지 않았습니다. VITE_SUPABASE_URL과 VITE_SUPABASE_ANON_KEY를 확인해주세요.";
+  const displayedErrorMessage = errorMessage ?? configurationError;
 
   const completeLogin = React.useCallback(
     async (session: Session | null) => {
@@ -50,7 +54,6 @@ const ManageLogin: React.FC = () => {
 
   React.useEffect(() => {
     if (!isSupabaseConfigured) {
-      setErrorMessage("Supabase 환경 변수가 설정되지 않았습니다. VITE_SUPABASE_URL과 VITE_SUPABASE_ANON_KEY를 확인해주세요.");
       return;
     }
 
@@ -167,9 +170,9 @@ const ManageLogin: React.FC = () => {
             <p className="text-xs text-muted-foreground">주최자 계정으로 로그인해주세요</p>
           )}
 
-          {errorMessage ? (
+          {displayedErrorMessage ? (
             <p className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              {errorMessage}
+              {displayedErrorMessage}
             </p>
           ) : null}
         </CardContent>
