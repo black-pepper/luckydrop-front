@@ -10,6 +10,8 @@ interface UserInfoCardProps {
   hasHistory: boolean;
   isExpired?: boolean;
   drawStatus: DrawStatus | null;
+  cooldownRemainingSeconds?: number;
+  onRateLimit: (error: unknown) => boolean;
   onDraw: () => void;
   onBack: () => void;
   onViewHistory: () => void;
@@ -23,11 +25,24 @@ const UserInfoCard = ({
   hasHistory,
   isExpired = false,
   drawStatus,
+  cooldownRemainingSeconds = 0,
+  onRateLimit,
   onDraw,
   onBack,
   onViewHistory,
 }: UserInfoCardProps) => {
   const renderDrawButton = () => {
+    if (cooldownRemainingSeconds > 0) {
+      return (
+        <button
+          disabled
+          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-lg opacity-60 cursor-not-allowed"
+        >
+          {cooldownRemainingSeconds}초 후 다시 시도
+        </button>
+      );
+    }
+
     if (isExpired || drawStatus === "CONTENT_EXPIRED") {
       return (
         <button
@@ -108,14 +123,20 @@ const UserInfoCard = ({
         {hasHistory && (
           <button
             onClick={onViewHistory}
-            className="w-full h-11 rounded-2xl bg-primary/10 text-primary font-semibold text-sm hover:bg-primary/20 transition-all flex items-center justify-center gap-1.5"
+            disabled={cooldownRemainingSeconds > 0}
+            className="w-full h-11 rounded-2xl bg-primary/10 text-primary font-semibold text-sm hover:bg-primary/20 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-1.5"
           >
             <ClipboardList className="w-3.5 h-3.5" />
-            내 결과 보기
+            {cooldownRemainingSeconds > 0 ? `${cooldownRemainingSeconds}초 후 다시 시도` : "내 결과 보기"}
           </button>
         )}
 
-        <RewardListCard contentCode={contentCode} invitationCode={invitationCode} />
+        <RewardListCard
+          contentCode={contentCode}
+          invitationCode={invitationCode}
+          cooldownRemainingSeconds={cooldownRemainingSeconds}
+          onRateLimit={onRateLimit}
+        />
       </div>
 
       <button

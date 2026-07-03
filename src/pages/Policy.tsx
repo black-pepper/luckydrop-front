@@ -68,7 +68,7 @@ const privacySections: Section[] = [
         <div className="space-y-1">
           <p className="font-medium text-foreground">(3) 자동 수집 정보</p>
           <p className="whitespace-pre-line">
-            {"- 당사는 IP 주소, 접속 로그, 브라우저 정보 등을 별도로 수집·저장하지 않습니다.\n- 단, 인증 처리 위탁사(Supabase) 및 호스팅 사업자(Cloudtype)에서 서비스 운영을 위해 필요한 범위 내에서 일시적으로 접속 정보를 처리할 수 있으며, 이는 각 사의 정책에 따릅니다."}
+            {"- 서비스는 부정 이용 방지, 보안, 요청 제한 적용을 위해 IP 주소를 서버에서 일시적으로 처리할 수 있습니다.\n- IP 주소는 자동 대입 시도 등 비정상적인 요청을 제한하기 위한 in-memory rate limit 용도로 사용되며, 마케팅 또는 프로파일링 목적으로 사용하지 않습니다.\n- 인증 처리 위탁사(Supabase) 및 호스팅 사업자(Cloudtype)에서 서비스 운영을 위해 필요한 범위 내에서 일시적으로 접속 정보를 처리할 수 있으며, 이는 각 사의 정책에 따릅니다."}
           </p>
         </div>
       </div>
@@ -149,7 +149,7 @@ const privacySections: Section[] = [
   },
   {
     title: "부칙",
-    body: "본 방침은 2026년 5월 1일부터 적용됩니다.",
+    body: "본 방침은 2026년 7월 1일부터 적용됩니다.",
   },
 ];
 
@@ -192,7 +192,7 @@ const Policy = () => {
             서비스 이용과 관련된 정책을 안내합니다.
           </p>
           <p className="text-xs text-muted-foreground">
-            마지막 업데이트: 2026.05.01
+            마지막 업데이트: 2026.07.01
           </p>
         </header>
 
