@@ -27,6 +27,8 @@ const Index = () => {
     drawResult,
     history,
     historyLoading,
+    cooldownRemainingSeconds,
+    handleRateLimitError,
     handleCodeSubmit,
     handleStartDraw,
     handleDrawComplete,
@@ -57,6 +59,7 @@ const Index = () => {
               startAt={contentStartAt}
               endAt={contentEndAt}
               initialValue={initialCode}
+              cooldownRemainingSeconds={cooldownRemainingSeconds}
             />
           )}
           {state === "user" && (
@@ -68,6 +71,8 @@ const Index = () => {
               hasHistory={true}
               isExpired={isExpired}
               drawStatus={drawStatus}
+              cooldownRemainingSeconds={cooldownRemainingSeconds}
+              onRateLimit={handleRateLimitError}
               onDraw={handleStartDraw}
               onBack={handleReset}
               onViewHistory={handleViewHistory}
@@ -82,6 +87,7 @@ const Index = () => {
               rewardImageUrl={drawResult.rewardImageUrl}
               drawNo={drawResult.drawNo ?? 0}
               remainingDraws={remaining}
+              cooldownRemainingSeconds={cooldownRemainingSeconds}
               onDrawAgain={handleDrawAgain}
               onFinish={handleReset}
               onViewHistory={handleViewHistory}
