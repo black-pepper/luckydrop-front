@@ -4,6 +4,9 @@
 
 When the Notion connector is available, read only the Notion pages that are relevant to the current task.
 
+- `common-rules`
+  - Page: https://app.notion.com/p/36b41a6b4b058180975fe37ca639c11b
+  - Use for shared working rules, naming rules, communication rules, and Notion document update rules.
 - `frontend-project-context`
   - Page: https://app.notion.com/p/36b41a6b4b05813090beec832adce1b3
   - Use for stack, routing, API/auth rules, environment variables, scripts, and repository structure.
