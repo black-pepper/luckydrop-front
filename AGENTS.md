@@ -19,7 +19,7 @@ If the connector cannot fetch the pages, state that clearly before making assump
 ## Project Conventions
 
 - Prefer existing routes, API wrappers, type names, hooks, and component patterns before adding new abstractions.
-- For API contracts, use the backend development server OpenAPI docs as the source of truth: https://port-0-luckydrop-api-dev-mmj1aamw01ba1757.sel3.cloudtype.app/v3/api-docs
+- For API contracts, use the backend development server Swagger/OpenAPI docs as the source of truth. The API docs location is documented in `frontend-project-context`.
 - Public participant API calls should use the existing request wrapper.
 - Authenticated management API calls should use the existing auth request wrapper and Supabase session token flow.
 - Use string `code` values as identifiers instead of numeric IDs.
