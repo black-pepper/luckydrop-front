@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { verifyCode, executeDraw, getResults, getParticipantContentDetail, isRateLimitError } from "@/api/client";
+import { verifyCode, executeDraw, getResults, getParticipantContentDetail, isRateLimitError, ApiError, RATE_LIMIT_MESSAGE } from "@/api/client";
 import type { DrawParticipantParams, DrawResponse, DrawResultResponse, DrawStatus } from "@/api/types";
 import { toast } from "@/hooks/use-toast";
 
 type AppState = "code" | "user" | "drawing" | "result" | "history";
+type ContentLoadState = "loading" | "ready" | "notFound" | "error";
 type HistoryReturnState = "user" | "result";
 const RATE_LIMIT_COOLDOWN_MS = 30_000;
 
@@ -40,6 +41,8 @@ export function useIndex(contentCode: string) {
   const [loading, setLoading] = useState(false);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [cooldownRemainingSeconds, setCooldownRemainingSeconds] = useState(0);
+  const [contentLoadState, setContentLoadState] = useState<ContentLoadState>(() => contentCode ? "loading" : "notFound");
+  const [contentLoadError, setContentLoadError] = useState<string | null>(null);
 
   const [contentTitle, setContentTitle] = useState<string | null>(null);
   const [contentDescription, setContentDescription] = useState<string | null>(null);
@@ -96,17 +99,51 @@ export function useIndex(contentCode: string) {
 
   useEffect(() => {
     if (!contentCode) return;
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setContentLoadState("loading");
+      setContentLoadError(null);
+      setContentTitle(null);
+      setContentDescription(null);
+      setContentStartAt(null);
+      setContentEndAt(null);
+      setIsExpired(false);
+    });
+
     getParticipantContentDetail(contentCode)
       .then((data) => {
+        if (cancelled) return;
         setContentTitle(data.title ?? null);
         setContentDescription(data.description ?? null);
         setContentStartAt(data.startAt ?? null);
         setContentEndAt(data.endAt ?? null);
         setIsExpired(checkExpired(data.startAt ?? null, data.endAt ?? null));
+        setContentLoadState("ready");
       })
       .catch((error) => {
-        handleRateLimitError(error);
+        if (cancelled) return;
+        if (handleRateLimitError(error)) {
+          setContentLoadState("error");
+          setContentLoadError(RATE_LIMIT_MESSAGE);
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 404) {
+          setContentLoadState("notFound");
+          setContentLoadError(null);
+          return;
+        }
+
+        setContentLoadState("error");
+        setContentLoadError(getErrorMessage(error, "콘텐츠 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."));
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [contentCode, handleRateLimitError]);
 
   const getDrawParams = useCallback(
@@ -207,6 +244,8 @@ export function useIndex(contentCode: string) {
 
   return {
     state,
+    contentLoadState,
+    contentLoadError,
     error,
     loading,
     invitationCode,
