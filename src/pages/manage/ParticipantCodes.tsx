@@ -75,7 +75,22 @@ const ParticipantCodes: React.FC = () => {
   };
 
   useEffect(() => {
-    loadParticipantCodes();
+    let active = true;
+
+    getManageParticipantCodes()
+      .then((items) => {
+        if (active) setParticipantCodes(Array.isArray(items) ? items : []);
+      })
+      .catch((e) => {
+        if (active) setError(getErrorMessage(e, "참여자 리스트를 불러오지 못했습니다"));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const filtered = useMemo(() => {
