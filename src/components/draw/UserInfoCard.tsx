@@ -43,17 +43,6 @@ const UserInfoCard = ({
       );
     }
 
-    if (isExpired || drawStatus === "CONTENT_EXPIRED") {
-      return (
-        <button
-          disabled
-          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-lg opacity-60 cursor-not-allowed"
-        >
-          종료되었습니다.
-        </button>
-      );
-    }
-
     if (drawStatus === "CONTENT_NOT_STARTED") {
       return (
         <button
@@ -61,6 +50,17 @@ const UserInfoCard = ({
           className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-lg opacity-60 cursor-not-allowed"
         >
           아직 시작되지 않았습니다
+        </button>
+      );
+    }
+
+    if (isExpired || drawStatus === "CONTENT_EXPIRED") {
+      return (
+        <button
+          disabled
+          className="w-full h-14 rounded-2xl bg-muted text-muted-foreground font-bold text-lg opacity-60 cursor-not-allowed"
+        >
+          종료되었습니다.
         </button>
       );
     }
