@@ -25,9 +25,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 
 function checkExpired(startAt: string | null, endAt: string | null): boolean {
   const now = new Date();
-  const started = startAt ? now >= new Date(startAt) : true;
-  const notEnded = endAt ? now <= new Date(endAt) : true;
-  return !(started && notEnded);
+  return endAt ? now > new Date(endAt) : false;
 }
 
 export function useIndex(contentCode: string) {
