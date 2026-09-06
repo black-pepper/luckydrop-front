@@ -242,6 +242,34 @@ export interface InvitationCodeUpdateRequest {
   active: boolean;
 }
 
+// Manage participant code types
+// GET /api/manage/participants
+// GET /api/manage/participants/{id}
+export interface ManageParticipantCodeResponse {
+  id: number;
+  participantName: string;
+  memo?: string | null;
+  createdAt: string; // ISO date-time
+  updatedAt: string; // ISO date-time
+}
+
+// POST /api/manage/participants
+export interface ParticipantCodeCreateRequest {
+  participantName: string;
+  memo?: string;
+}
+
+// POST /api/manage/participants/batch
+export interface ParticipantCodeBatchCreateRequest {
+  participants: ParticipantCodeCreateRequest[];
+}
+
+// PUT /api/manage/participants/{id}
+export interface ParticipantCodeUpdateRequest {
+  participantName: string;
+  memo?: string;
+}
+
 // Spring Page 래퍼 (UI에서 사용하는 필드만)
 export interface PageResponse<T> {
   content: T[];
