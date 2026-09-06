@@ -1,9 +1,12 @@
-import { useState, useCallback, useEffect } from "react";
-import { verifyCode, executeDraw, getResults, getParticipantContentDetail } from "@/api/client";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { verifyCode, executeDraw, getResults, getParticipantContentDetail, isRateLimitError, ApiError, RATE_LIMIT_MESSAGE } from "@/api/client";
 import type { DrawParticipantParams, DrawResponse, DrawResultResponse, DrawStatus } from "@/api/types";
+import { toast } from "@/hooks/use-toast";
 
 type AppState = "code" | "user" | "drawing" | "result" | "history";
+type ContentLoadState = "loading" | "ready" | "notFound" | "error";
 type HistoryReturnState = "user" | "result";
+const RATE_LIMIT_COOLDOWN_MS = 30_000;
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) {
@@ -22,9 +25,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 
 function checkExpired(startAt: string | null, endAt: string | null): boolean {
   const now = new Date();
-  const started = startAt ? now >= new Date(startAt) : true;
-  const notEnded = endAt ? now <= new Date(endAt) : true;
-  return !(started && notEnded);
+  return endAt ? now > new Date(endAt) : false;
 }
 
 export function useIndex(contentCode: string) {
@@ -36,6 +37,10 @@ export function useIndex(contentCode: string) {
   const [drawStatus, setDrawStatus] = useState<DrawStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [cooldownRemainingSeconds, setCooldownRemainingSeconds] = useState(0);
+  const [contentLoadState, setContentLoadState] = useState<ContentLoadState>(() => contentCode ? "loading" : "notFound");
+  const [contentLoadError, setContentLoadError] = useState<string | null>(null);
 
   const [contentTitle, setContentTitle] = useState<string | null>(null);
   const [contentDescription, setContentDescription] = useState<string | null>(null);
@@ -48,19 +53,96 @@ export function useIndex(contentCode: string) {
   const [history, setHistory] = useState<DrawResultResponse[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyReturnState, setHistoryReturnState] = useState<HistoryReturnState>("user");
+  const executingDrawRef = useRef(false);
+
+  const startRateLimitCooldown = useCallback((retryAfterSeconds?: number) => {
+    const cooldownSeconds = retryAfterSeconds ?? Math.ceil(RATE_LIMIT_COOLDOWN_MS / 1000);
+    const cooldownMs = cooldownSeconds * 1000;
+    const nextCooldownUntil = Date.now() + cooldownMs;
+    setCooldownUntil(nextCooldownUntil);
+    setCooldownRemainingSeconds(cooldownSeconds);
+    toast({
+      description: `${cooldownSeconds}초 후 다시 시도해주세요.`,
+      variant: "destructive",
+    });
+  }, []);
+
+  const handleRateLimitError = useCallback((error: unknown) => {
+    if (!isRateLimitError(error)) {
+      return false;
+    }
+
+    startRateLimitCooldown(error.retryAfterSeconds);
+    return true;
+  }, [startRateLimitCooldown]);
+
+  const isCoolingDown = cooldownRemainingSeconds > 0;
+
+  useEffect(() => {
+    if (!cooldownUntil) return;
+
+    const updateRemaining = () => {
+      const remainingMs = cooldownUntil - Date.now();
+      const nextRemainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+      setCooldownRemainingSeconds(nextRemainingSeconds);
+      if (nextRemainingSeconds === 0) {
+        setCooldownUntil(null);
+      }
+    };
+
+    updateRemaining();
+    const timer = window.setInterval(updateRemaining, 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldownUntil]);
 
   useEffect(() => {
     if (!contentCode) return;
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setContentLoadState("loading");
+      setContentLoadError(null);
+      setContentTitle(null);
+      setContentDescription(null);
+      setContentStartAt(null);
+      setContentEndAt(null);
+      setIsExpired(false);
+    });
+
     getParticipantContentDetail(contentCode)
       .then((data) => {
+        if (cancelled) return;
         setContentTitle(data.title ?? null);
         setContentDescription(data.description ?? null);
         setContentStartAt(data.startAt ?? null);
         setContentEndAt(data.endAt ?? null);
         setIsExpired(checkExpired(data.startAt ?? null, data.endAt ?? null));
+        setContentLoadState("ready");
       })
-      .catch(() => {});
-  }, [contentCode]);
+      .catch((error) => {
+        if (cancelled) return;
+        if (handleRateLimitError(error)) {
+          setContentLoadState("error");
+          setContentLoadError(RATE_LIMIT_MESSAGE);
+          return;
+        }
+
+        if (error instanceof ApiError && error.status === 404) {
+          setContentLoadState("notFound");
+          setContentLoadError(null);
+          return;
+        }
+
+        setContentLoadState("error");
+        setContentLoadError(getErrorMessage(error, "콘텐츠 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [contentCode, handleRateLimitError]);
 
   const getDrawParams = useCallback(
     (nextInvitationCode?: string): DrawParticipantParams => ({
@@ -71,6 +153,7 @@ export function useIndex(contentCode: string) {
   );
 
   async function handleCodeSubmit(inputCode: string) {
+    if (isCoolingDown) return;
     setError(null);
     if (!contentCode) {
       setError("콘텐츠 정보가 없습니다. 올바른 참여 링크로 접속해 주세요.");
@@ -86,30 +169,39 @@ export function useIndex(contentCode: string) {
       setDrawStatus(data.drawStatus);
       setState("user");
     } catch (error) {
-      setError(getErrorMessage(error, "사용할 수 없는 코드예요. 코드를 다시 확인해 주세요 🙏"));
+      if (!handleRateLimitError(error)) {
+        setError(getErrorMessage(error, "사용할 수 없는 코드예요. 코드를 다시 확인해 주세요 🙏"));
+      }
     } finally {
       setLoading(false);
     }
   }
 
   const handleStartDraw = () => {
-    if (!canDraw || remaining <= 0) return;
+    if (isCoolingDown || !canDraw || remaining <= 0) return;
     setState("drawing");
   };
 
   const handleDrawComplete = useCallback(async () => {
+    if (isCoolingDown || executingDrawRef.current) return;
+    executingDrawRef.current = true;
     try {
       const result = await executeDraw(getDrawParams());
       setDrawResult(result);
       setRemaining(result.remainingCount ?? 0);
       setState("result");
     } catch (error) {
-      setError(getErrorMessage(error, "뽑기 처리 중 오류가 발생했습니다"));
+      if (!handleRateLimitError(error)) {
+        setError(getErrorMessage(error, "뽑기 처리 중 오류가 발생했습니다"));
+      }
       setState("user");
+    } finally {
+      executingDrawRef.current = false;
     }
-  }, [getDrawParams]);
+  }, [getDrawParams, handleRateLimitError, isCoolingDown]);
 
   const handleDrawAgain = () => {
+    if (isCoolingDown) return;
     setState("drawing");
   };
 
@@ -122,23 +214,27 @@ export function useIndex(contentCode: string) {
     setRemaining(0);
     setCanDraw(false);
     setDrawStatus(null);
+    setCooldownUntil(null);
+    setCooldownRemainingSeconds(0);
     setHistory([]);
     setHistoryReturnState("user");
   };
 
   const handleViewHistory = useCallback(async () => {
+    if (isCoolingDown) return;
     setHistoryReturnState(state === "result" && drawResult ? "result" : "user");
     setHistoryLoading(true);
     setState("history");
     try {
       const data = await getResults(getDrawParams());
       setHistory(data ?? []);
-    } catch {
+    } catch (error) {
+      handleRateLimitError(error);
       setHistory([]);
     } finally {
       setHistoryLoading(false);
     }
-  }, [drawResult, getDrawParams, state]);
+  }, [drawResult, getDrawParams, handleRateLimitError, isCoolingDown, state]);
 
   const handleHistoryBack = () => {
     setState(historyReturnState === "result" && drawResult ? "result" : "user");
@@ -146,6 +242,8 @@ export function useIndex(contentCode: string) {
 
   return {
     state,
+    contentLoadState,
+    contentLoadError,
     error,
     loading,
     invitationCode,
@@ -161,6 +259,9 @@ export function useIndex(contentCode: string) {
     drawResult,
     history,
     historyLoading,
+    cooldownRemainingSeconds,
+    isCoolingDown,
+    handleRateLimitError,
     handleCodeSubmit,
     handleStartDraw,
     handleDrawComplete,
