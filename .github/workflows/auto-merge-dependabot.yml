@@ -3,7 +3,7 @@ name: Auto-merge Dependabot PRs
 on:
   workflow_run:
     workflows:
-      - Dependency checks
+      - Quality checks
     types:
       - completed
 
@@ -86,4 +86,4 @@ jobs:
         if: steps.pr.outputs.number != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run dependency-checks.yml --ref dependency-updates
+        run: gh workflow run quality-checks.yml --ref dependency-updates

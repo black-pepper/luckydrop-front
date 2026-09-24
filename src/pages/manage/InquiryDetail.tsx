@@ -15,31 +15,51 @@ import {
 
 const InquiryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const inquiryId = Number(id);
+  const isValidInquiryId = Number.isInteger(inquiryId);
   const [inquiry, setInquiry] = useState<UserInquiry | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [request, setRequest] = useState<{
+    id: number | null;
+    settled: boolean;
+    error: string | null;
+  }>({
+    id: isValidInquiryId ? inquiryId : null,
+    settled: false,
+    error: null,
+  });
+
+  const loading = isValidInquiryId ? request.id !== inquiryId || !request.settled : false;
+  const error = request.id === inquiryId ? request.error : null;
+  const visibleInquiry = isValidInquiryId && request.id === inquiryId ? inquiry : null;
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    const inquiryId = Number(id);
-    if (!Number.isInteger(inquiryId)) {
-      setInquiry(null);
-      setLoading(false);
-      return;
-    }
+    if (!isValidInquiryId) return;
+    let ignore = false;
 
     getUserInquiry(inquiryId)
-      .then(setInquiry)
+      .then((data) => {
+        if (ignore) return;
+        setInquiry(data);
+        setRequest({ id: inquiryId, settled: true, error: null });
+      })
       .catch((e) => {
+        if (ignore) return;
         if (e instanceof ApiError && e.status === 404) {
           setInquiry(null);
+          setRequest({ id: inquiryId, settled: true, error: null });
           return;
         }
-        setError(e.message ?? "문의 정보를 불러오지 못했습니다");
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
+        setRequest({
+          id: inquiryId,
+          settled: true,
+          error: e.message ?? "문의 정보를 불러오지 못했습니다",
+        });
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [inquiryId, isValidInquiryId]);
 
   if (loading) {
     return (
@@ -65,7 +85,7 @@ const InquiryDetail: React.FC = () => {
     );
   }
 
-  if (!inquiry) {
+  if (!visibleInquiry) {
     return (
       <ManageLayout>
         <div className="text-center py-20">
@@ -78,7 +98,7 @@ const InquiryDetail: React.FC = () => {
     );
   }
 
-  const done = inquiry.status === "DONE";
+  const done = visibleInquiry.status === "DONE";
 
   return (
     <ManageLayout>
@@ -98,16 +118,16 @@ const InquiryDetail: React.FC = () => {
             variant={done ? "default" : "secondary"}
             className={done ? "" : "bg-muted text-muted-foreground hover:bg-muted"}
           >
-            {inquiryStatusLabel[inquiry.status]}
+            {inquiryStatusLabel[visibleInquiry.status]}
           </Badge>
           <Badge variant="outline" className="font-normal">
-            {inquiryTypeLabel[inquiry.type]}
+            {inquiryTypeLabel[visibleInquiry.type]}
           </Badge>
         </div>
-        <h1 className="text-2xl font-bold text-foreground">{inquiry.title}</h1>
+        <h1 className="text-2xl font-bold text-foreground">{visibleInquiry.title}</h1>
         <p className="text-xs text-muted-foreground mt-2 inline-flex items-center gap-1">
           <Clock className="h-3 w-3" />
-          작성일 {formatInquiryDate(inquiry.createdAt)}
+          작성일 {formatInquiryDate(visibleInquiry.createdAt)}
         </p>
       </div>
 
@@ -120,12 +140,12 @@ const InquiryDetail: React.FC = () => {
             <span>나의 문의</span>
           </div>
           <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-            {inquiry.content}
+            {visibleInquiry.content}
           </p>
         </CardContent>
       </Card>
 
-      {done && inquiry.answer ? (
+      {done && visibleInquiry.answer ? (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-5">
             <div className="flex items-center justify-between gap-2 mb-3">
@@ -135,14 +155,14 @@ const InquiryDetail: React.FC = () => {
                 </div>
                 <span>운영팀 답변</span>
               </div>
-              {inquiry.answeredAt && (
+              {visibleInquiry.answeredAt && (
                 <span className="text-xs text-muted-foreground">
-                  {formatInquiryDate(inquiry.answeredAt)}
+                  {formatInquiryDate(visibleInquiry.answeredAt)}
                 </span>
               )}
             </div>
             <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-              {inquiry.answer}
+              {visibleInquiry.answer}
             </p>
           </CardContent>
         </Card>

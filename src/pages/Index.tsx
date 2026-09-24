@@ -4,6 +4,7 @@ import UserInfoCard from "@/components/draw/UserInfoCard";
 import DrawBox from "@/components/draw/DrawBox";
 import ResultCard from "@/components/draw/ResultCard";
 import ResultHistoryList from "@/components/draw/ResultHistoryList";
+import ContentStateCard from "@/components/draw/ContentStateCard";
 import { useIndex } from "@/hooks/useIndex";
 
 const Index = () => {
@@ -13,6 +14,8 @@ const Index = () => {
   const initialCode = searchParams.get("code") ?? "";
   const {
     state,
+    contentLoadState,
+    contentLoadError,
     error,
     loading,
     invitationCode,
@@ -27,6 +30,8 @@ const Index = () => {
     drawResult,
     history,
     historyLoading,
+    cooldownRemainingSeconds,
+    handleRateLimitError,
     handleCodeSubmit,
     handleStartDraw,
     handleDrawComplete,
@@ -47,7 +52,14 @@ const Index = () => {
 
       <div className="flex-1 flex items-center justify-center py-8">
         <div className="w-full max-w-sm">
-          {state === "code" && (
+          {contentLoadState !== "ready" && (
+            <ContentStateCard
+              type={contentLoadState}
+              message={contentLoadError}
+              onHome={() => navigate("/")}
+            />
+          )}
+          {contentLoadState === "ready" && state === "code" && (
             <CodeInputCard
               onSubmit={handleCodeSubmit}
               error={error}
@@ -57,9 +69,10 @@ const Index = () => {
               startAt={contentStartAt}
               endAt={contentEndAt}
               initialValue={initialCode}
+              cooldownRemainingSeconds={cooldownRemainingSeconds}
             />
           )}
-          {state === "user" && (
+          {contentLoadState === "ready" && state === "user" && (
             <UserInfoCard
               contentCode={contentCode}
               invitationCode={invitationCode}
@@ -68,27 +81,30 @@ const Index = () => {
               hasHistory={true}
               isExpired={isExpired}
               drawStatus={drawStatus}
+              cooldownRemainingSeconds={cooldownRemainingSeconds}
+              onRateLimit={handleRateLimitError}
               onDraw={handleStartDraw}
               onBack={handleReset}
               onViewHistory={handleViewHistory}
             />
           )}
-          {state === "drawing" && (
+          {contentLoadState === "ready" && state === "drawing" && (
             <DrawBox onComplete={handleDrawComplete} />
           )}
-          {state === "result" && drawResult && (
+          {contentLoadState === "ready" && state === "result" && drawResult && (
             <ResultCard
               rewardName={drawResult.rewardName ?? "알 수 없는 보상"}
               rewardImageUrl={drawResult.rewardImageUrl}
               drawNo={drawResult.drawNo ?? 0}
               remainingDraws={remaining}
+              cooldownRemainingSeconds={cooldownRemainingSeconds}
               onDrawAgain={handleDrawAgain}
               onFinish={handleReset}
               onViewHistory={handleViewHistory}
               onReset={handleReset}
             />
           )}
-          {state === "history" && (
+          {contentLoadState === "ready" && state === "history" && (
             <ResultHistoryList
               results={history}
               loading={historyLoading}

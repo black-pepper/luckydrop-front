@@ -10,6 +10,7 @@ interface CodeInputCardProps {
   startAt?: string | null;
   endAt?: string | null;
   initialValue?: string;
+  cooldownRemainingSeconds?: number;
 }
 
 function formatDateTime(iso: string): string {
@@ -22,12 +23,13 @@ function formatDateTime(iso: string): string {
   return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
 }
 
-const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, endAt, initialValue = "" }: CodeInputCardProps) => {
+const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, endAt, initialValue = "", cooldownRemainingSeconds = 0 }: CodeInputCardProps) => {
   const [code, setCode] = useState(initialValue);
+  const isCoolingDown = cooldownRemainingSeconds > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.trim()) onSubmit(code.trim());
+    if (code.trim() && !isCoolingDown) onSubmit(code.trim());
   };
 
   return (
@@ -63,7 +65,7 @@ const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, 
                 ? "border-destructive focus:border-destructive focus:ring-destructive/10"
                 : "border-border focus:border-primary focus:ring-primary/10"
             }`}
-            disabled={loading}
+            disabled={loading || isCoolingDown}
           />
         </div>
 
@@ -79,10 +81,10 @@ const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, 
 
         <button
           type="submit"
-          disabled={!code.trim() || loading}
+          disabled={!code.trim() || loading || isCoolingDown}
           className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold text-lg shadow-[var(--shadow-soft)] hover:brightness-105 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none transition-all"
         >
-          {loading ? "확인 중..." : "코드 확인"}
+          {isCoolingDown ? `${cooldownRemainingSeconds}초 후 다시 시도` : loading ? "확인 중..." : "코드 확인"}
         </button>
       </form>
 

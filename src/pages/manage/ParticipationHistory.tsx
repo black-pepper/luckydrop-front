@@ -99,15 +99,22 @@ const ParticipationHistory: React.FC = () => {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
   const [data, setData] = useState<PageResponse<ParticipationHistoryItem>>(emptyPage);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [request, setRequest] = useState<{
+    key: string | null;
+    settled: boolean;
+    error: string | null;
+  }>({
+    key: null,
+    settled: false,
+    error: null,
+  });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const requestKey = [keyword, statusFilter, page, size].join("|");
+  const loading = request.key !== requestKey || !request.settled;
+  const error = request.key === requestKey ? request.error : null;
 
   useEffect(() => {
     let cancelled = false;
-
-    setLoading(true);
-    setError(null);
 
     getMyParticipationHistories({
       keyword,
@@ -118,24 +125,24 @@ const ParticipationHistory: React.FC = () => {
       .then((response) => {
         if (!cancelled) {
           setData(response);
+          setRequest({ key: requestKey, settled: true, error: null });
         }
       })
       .catch((fetchError) => {
         if (!cancelled) {
           setData(emptyPage);
-          setError(getErrorMessage(fetchError, "참여 내역을 불러오지 못했습니다."));
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
+          setRequest({
+            key: requestKey,
+            settled: true,
+            error: getErrorMessage(fetchError, "참여 내역을 불러오지 못했습니다."),
+          });
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [keyword, page, size, statusFilter]);
+  }, [keyword, page, requestKey, size, statusFilter]);
 
   const handleKeywordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setKeyword(event.target.value);
