@@ -1,8 +1,9 @@
-name: Dependency checks
+name: Quality checks
 
 on:
   pull_request:
     branches:
+      - develop
       - dependency-updates
   push:
     branches:

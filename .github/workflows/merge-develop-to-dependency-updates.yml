@@ -1,4 +1,4 @@
-name: Merge develop into dependency-updates
+name: Sync develop to dependency-updates
 
 on:
   push:
@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  merge:
-    name: Merge develop
+  sync:
+    name: Sync develop
     runs-on: ubuntu-latest
 
     steps:
@@ -30,12 +30,24 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Merge develop into dependency-updates
+      - name: Sync develop to dependency-updates
         run: |
           git fetch origin develop dependency-updates
 
-          if git merge-base --is-ancestor origin/develop HEAD; then
-            echo "dependency-updates already includes develop."
+          if git diff --quiet origin/develop origin/dependency-updates; then
+            if [ "$(git rev-parse origin/develop)" = "$(git rev-parse origin/dependency-updates)" ]; then
+              echo "dependency-updates already matches develop."
+              exit 0
+            fi
+
+            echo "No pending changes. Resetting dependency-updates to develop."
+            git reset --hard origin/develop
+            git push --force-with-lease origin HEAD:dependency-updates
+            exit 0
+          fi
+
+          if git merge-base --is-ancestor origin/develop origin/dependency-updates; then
+            echo "dependency-updates already includes develop and has pending changes."
             exit 0
           fi
 

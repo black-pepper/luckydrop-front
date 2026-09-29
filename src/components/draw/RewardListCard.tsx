@@ -6,25 +6,34 @@ import type { DrawParticipantParams, RewardResponse } from "@/api/types";
 interface RewardListCardProps {
   contentCode: string;
   invitationCode: string;
+  cooldownRemainingSeconds?: number;
+  onRateLimit: (error: unknown) => boolean;
 }
 
-const RewardListCard = ({ contentCode, invitationCode }: RewardListCardProps) => {
+const RewardListCard = ({ contentCode, invitationCode, cooldownRemainingSeconds = 0, onRateLimit }: RewardListCardProps) => {
   const [open, setOpen] = useState(false);
   const [rewards, setRewards] = useState<RewardResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [rateLimitBlocked, setRateLimitBlocked] = useState(false);
+  const isCoolingDown = cooldownRemainingSeconds > 0;
 
   const handleToggle = async () => {
+    if (isCoolingDown) return;
     const next = !open;
     setOpen(next);
     if (next && !loaded) {
       setLoading(true);
+      setRateLimitBlocked(false);
       try {
         const params: DrawParticipantParams = { contentCode, invitationCode };
         const data = await getRewards(params);
         setRewards(data ?? []);
         setLoaded(true);
-      } catch {
+      } catch (error) {
+        if (onRateLimit(error)) {
+          setRateLimitBlocked(true);
+        }
         setRewards([]);
       } finally {
         setLoading(false);
@@ -36,10 +45,11 @@ const RewardListCard = ({ contentCode, invitationCode }: RewardListCardProps) =>
     <div className="w-full">
       <button
         onClick={handleToggle}
-        className="w-full h-11 rounded-2xl bg-accent/60 text-accent-foreground font-semibold text-sm hover:bg-accent/80 transition-all flex items-center justify-center gap-1.5"
+        disabled={isCoolingDown}
+        className="w-full h-11 rounded-2xl bg-accent/60 text-accent-foreground font-semibold text-sm hover:bg-accent/80 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-1.5"
       >
         <Gift className="w-3.5 h-3.5" />
-        보상 목록 보기
+        {isCoolingDown ? `${cooldownRemainingSeconds}초 후 다시 시도` : "보상 목록 보기"}
         {open ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
       </button>
 
@@ -48,6 +58,8 @@ const RewardListCard = ({ contentCode, invitationCode }: RewardListCardProps) =>
           <p className="text-xs text-muted-foreground text-center mb-1">🎁 당첨 가능 상품</p>
           {loading ? (
             <div className="text-center py-4 text-sm text-muted-foreground">⏳ 불러오는 중...</div>
+          ) : rateLimitBlocked ? (
+            <div className="text-center py-4 text-sm text-muted-foreground">잠시 후 다시 시도해주세요</div>
           ) : rewards.length === 0 ? (
             <div className="text-center py-4 text-sm text-muted-foreground">보상 정보가 없습니다</div>
           ) : (

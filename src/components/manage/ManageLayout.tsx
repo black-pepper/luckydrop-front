@@ -69,7 +69,8 @@ const SidebarNav = ({ pathname, onLogout, onNavigate }: SidebarNavProps) => (
 const ManageLayout: React.FC<Props> = ({ children }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpenPath, setMobileOpenPath] = useState<string | null>(null);
+  const mobileOpen = mobileOpenPath === pathname;
 
   useEffect(() => {
     document.body.style.backgroundColor = "hsl(var(--manage-bg))";
@@ -77,10 +78,6 @@ const ManageLayout: React.FC<Props> = ({ children }) => {
       document.body.style.backgroundColor = "";
     };
   }, []);
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -96,7 +93,7 @@ const ManageLayout: React.FC<Props> = ({ children }) => {
 
       {/* Mobile header with hamburger */}
       <div className="md:hidden fixed top-0 inset-x-0 z-30 flex items-center gap-3 px-4 h-14 border-b bg-manage-sidebar text-manage-sidebar-foreground border-manage-border">
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <Sheet open={mobileOpen} onOpenChange={(open) => setMobileOpenPath(open ? pathname : null)}>
           <SheetTrigger asChild>
             <Button
               variant="ghost"
@@ -117,7 +114,7 @@ const ManageLayout: React.FC<Props> = ({ children }) => {
             <SidebarNav
               pathname={pathname}
               onLogout={handleLogout}
-              onNavigate={() => setMobileOpen(false)}
+              onNavigate={() => setMobileOpenPath(null)}
             />
           </SheetContent>
         </Sheet>

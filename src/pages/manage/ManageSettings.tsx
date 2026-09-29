@@ -30,23 +30,39 @@ const ManageSettings: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const fetchUserData = async () => {
-    try {
-      setIsLoading(true);
-      const userData = await getCurrentUser();
-      setUser(userData);
-      setName(userData.name);
-      setOriginalName(userData.name);
-    } catch (error) {
-      console.error("Failed to fetch user data:", error);
-      toast.error("계정 정보를 불러오는데 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchUserData();
+    let ignore = false;
+
+    const initializeUserData = async () => {
+      try {
+        const userData = await getCurrentUser();
+
+        if (ignore) {
+          return;
+        }
+
+        setUser(userData);
+        setName(userData.name);
+        setOriginalName(userData.name);
+      } catch (error) {
+        if (ignore) {
+          return;
+        }
+
+        console.error("Failed to fetch user data:", error);
+        toast.error("계정 정보를 불러오는데 실패했습니다.");
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void initializeUserData();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   // 날짜 포맷 변환 (YYYY.MM.DD)
