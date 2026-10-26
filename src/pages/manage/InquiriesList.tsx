@@ -19,12 +19,11 @@ const InquiriesList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
     getUserInquiries()
-      .then((items) =>
-        setInquiries([...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
-      )
+      .then((items) => {
+        setInquiries([...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+        setError(null);
+      })
       .catch((e) => setError(e.message ?? "문의 목록을 불러오지 못했습니다"))
       .finally(() => setLoading(false));
   }, []);

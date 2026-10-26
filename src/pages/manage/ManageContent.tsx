@@ -61,6 +61,12 @@ const emptyAppliedFilters: AppliedFilters = {
 
 const PAGE_SIZE = 20;
 
+interface RequestState<Key> {
+  key: Key | null;
+  settled: boolean;
+  error: string | null;
+}
+
 // ── Local form types ────────────────────────────────────────────────────────
 
 interface InvitationCodeFormState {
@@ -407,8 +413,11 @@ const ManageContent: React.FC = () => {
 
   // Content state
   const [content, setContent] = useState<ManageContentDetailResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [contentRequest, setContentRequest] = useState<RequestState<string>>({
+    key: contentCode ?? null,
+    settled: false,
+    error: null,
+  });
   const [copied, setCopied] = useState(false);
   const [copiedCodeId, setCopiedCodeId] = useState<number | null>(null);
 
@@ -424,8 +433,11 @@ const ManageContent: React.FC = () => {
 
   // Rewards state
   const [rewards, setRewards] = useState<ManageRewardResponse[]>([]);
-  const [rewardsLoading, setRewardsLoading] = useState(false);
-  const [rewardsError, setRewardsError] = useState<string | null>(null);
+  const [rewardsRequest, setRewardsRequest] = useState<RequestState<string>>({
+    key: null,
+    settled: false,
+    error: null,
+  });
   const [drawMode, setDrawMode] = useState<DrawMode>("WEIGHTED");
 
   // Mode change modal
@@ -446,8 +458,11 @@ const ManageContent: React.FC = () => {
 
   // Invitation codes state
   const [inviteCodes, setInviteCodes] = useState<ManageInvitationCodeResponse[]>([]);
-  const [inviteCodesLoading, setInviteCodesLoading] = useState(false);
-  const [inviteCodesError, setInviteCodesError] = useState<string | null>(null);
+  const [inviteCodesRequest, setInviteCodesRequest] = useState<RequestState<string>>({
+    key: null,
+    settled: false,
+    error: null,
+  });
 
   // Add invitation code form
   const [showAddCodeForm, setShowAddCodeForm] = useState(false);
@@ -463,8 +478,11 @@ const ManageContent: React.FC = () => {
 
   // Draw results state (Page 응답)
   const [drawResultsPage, setDrawResultsPage] = useState<PageResponse<ManageDrawResultResponse> | null>(null);
-  const [drawResultsLoading, setDrawResultsLoading] = useState(false);
-  const [drawResultsError, setDrawResultsError] = useState<string | null>(null);
+  const [drawResultsRequest, setDrawResultsRequest] = useState<RequestState<string>>({
+    key: null,
+    settled: false,
+    error: null,
+  });
   const [updatingDeliveryId, setUpdatingDeliveryId] = useState<number | null>(null);
 
   // Pagination
@@ -483,52 +501,118 @@ const ManageContent: React.FC = () => {
   // Applied filters (검색 클릭 시 적용)
   const [appliedFilters, setAppliedFilters] = useState<AppliedFilters>(emptyAppliedFilters);
 
+  const drawResultsRequestKey = contentCode
+    ? [
+        contentCode,
+        page,
+        appliedFilters.drawnAtFrom,
+        appliedFilters.drawnAtTo,
+        appliedFilters.delivered,
+        appliedFilters.invitationCode,
+        appliedFilters.rewardName,
+      ].join("|")
+    : null;
+
+  const loading = contentCode
+    ? contentRequest.key !== contentCode || !contentRequest.settled
+    : false;
+  const error = contentRequest.key === contentCode ? contentRequest.error : null;
+  const rewardsLoading = contentCode
+    ? rewardsRequest.key !== contentCode || !rewardsRequest.settled
+    : false;
+  const rewardsError = rewardsRequest.key === contentCode ? rewardsRequest.error : null;
+  const inviteCodesLoading = contentCode
+    ? inviteCodesRequest.key !== contentCode || !inviteCodesRequest.settled
+    : false;
+  const inviteCodesError = inviteCodesRequest.key === contentCode ? inviteCodesRequest.error : null;
+  const drawResultsLoading = drawResultsRequestKey
+    ? drawResultsRequest.key !== drawResultsRequestKey || !drawResultsRequest.settled
+    : false;
+  const drawResultsError = drawResultsRequest.key === drawResultsRequestKey ? drawResultsRequest.error : null;
+
   useEffect(() => {
     if (!contentCode) return;
-    setLoading(true);
-    setError(null);
+    let ignore = false;
+
     getManageContentDetail(contentCode)
       .then((data) => {
+        if (ignore) return;
         setContent(data);
         setEditTitle(data.title);
         setEditDescription(data.description);
         setEditStartAt(data.startAt ? data.startAt.slice(0, 16) : "");
         setEditEndAt(data.endAt ? data.endAt.slice(0, 16) : "");
+        setContentRequest({ key: contentCode, settled: true, error: null });
       })
-      .catch((e) => setError(e.message ?? "콘텐츠를 불러오지 못했습니다"))
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (ignore) return;
+        setContentRequest({
+          key: contentCode,
+          settled: true,
+          error: e.message ?? "콘텐츠를 불러오지 못했습니다",
+        });
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, [contentCode]);
 
   useEffect(() => {
     if (!contentCode) return;
-    setRewardsLoading(true);
-    setRewardsError(null);
+    let ignore = false;
+
     getManageRewardsByContent(contentCode)
       .then((data) => {
+        if (ignore) return;
         setRewards(data);
         const first = data[0];
         if (first) setDrawMode(first.poolCount !== null ? "DRAW" : "WEIGHTED");
+        setRewardsRequest({ key: contentCode, settled: true, error: null });
       })
-      .catch((e) => setRewardsError(e.message ?? "보상 목록을 불러오지 못했습니다"))
-      .finally(() => setRewardsLoading(false));
+      .catch((e) => {
+        if (ignore) return;
+        setRewardsRequest({
+          key: contentCode,
+          settled: true,
+          error: e.message ?? "보상 목록을 불러오지 못했습니다",
+        });
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, [contentCode]);
 
   useEffect(() => {
     if (!contentCode) return;
-    setInviteCodesLoading(true);
-    setInviteCodesError(null);
+    let ignore = false;
+
     getManageInvitationCodesByContent(contentCode)
-      .then(setInviteCodes)
-      .catch((e) => setInviteCodesError(e.message ?? "추첨 코드 목록을 불러오지 못했습니다"))
-      .finally(() => setInviteCodesLoading(false));
+      .then((data) => {
+        if (ignore) return;
+        setInviteCodes(data);
+        setInviteCodesRequest({ key: contentCode, settled: true, error: null });
+      })
+      .catch((e) => {
+        if (ignore) return;
+        setInviteCodesRequest({
+          key: contentCode,
+          settled: true,
+          error: e.message ?? "추첨 코드 목록을 불러오지 못했습니다",
+        });
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, [contentCode]);
 
   useEffect(() => {
-    if (!contentCode) return;
+    if (!contentCode || !drawResultsRequestKey) return;
     const toIso = (v: string) => (v ? new Date(v).toISOString() : undefined);
+    let ignore = false;
 
-    setDrawResultsLoading(true);
-    setDrawResultsError(null);
     getManageDrawResults({
       contentCode,
       drawnAtFrom: toIso(appliedFilters.drawnAtFrom),
@@ -542,10 +626,24 @@ const ManageContent: React.FC = () => {
       page,
       size: PAGE_SIZE,
     })
-      .then(setDrawResultsPage)
-      .catch((e) => setDrawResultsError(e.message ?? "추첨 결과를 불러오지 못했습니다"))
-      .finally(() => setDrawResultsLoading(false));
-  }, [contentCode, page, appliedFilters]);
+      .then((data) => {
+        if (ignore) return;
+        setDrawResultsPage(data);
+        setDrawResultsRequest({ key: drawResultsRequestKey, settled: true, error: null });
+      })
+      .catch((e) => {
+        if (ignore) return;
+        setDrawResultsRequest({
+          key: drawResultsRequestKey,
+          settled: true,
+          error: e.message ?? "추첨 결과를 불러오지 못했습니다",
+        });
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [contentCode, page, appliedFilters, drawResultsRequestKey]);
 
   const handleApplyFilters = () => {
     const toStartOfDay = (d: Date) => { const r = new Date(d); r.setHours(0, 0, 0, 0); return r.toISOString(); };
