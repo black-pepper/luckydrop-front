@@ -1,0 +1,184 @@
+name: Manual Pages preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: Repository branch to build for manual-test
+        required: true
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: cloudflare-pages-manual-test
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/develop' && github.event.repository.default_branch == 'develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Validate source branch
+        env:
+          SOURCE_BRANCH: ${{ inputs.source_branch }}
+        run: |
+          [[ "$GITHUB_REF" == refs/heads/develop ]]
+          git check-ref-format "refs/heads/$SOURCE_BRANCH"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Validate public development configuration
+        env:
+          VITE_API_BASE_URL: ${{ vars.DEV_VITE_API_BASE_URL }}
+          VITE_SUPABASE_URL: ${{ vars.DEV_VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.DEV_VITE_SUPABASE_ANON_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          for (const name of ['VITE_API_BASE_URL', 'VITE_SUPABASE_URL']) {
+            const url = URL.parse(process.env[name]);
+            if (!url || url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+              throw new Error(`Expected a public development HTTPS URL for ${name}`);
+            }
+          }
+          const key = process.env.VITE_SUPABASE_ANON_KEY;
+          const parts = key.split('.');
+          if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(key)) {
+            let claims;
+            try {
+              claims = parts.length === 3 && JSON.parse(Buffer.from(parts[1], 'base64url'));
+            } catch {}
+            if (claims?.role !== 'anon') throw new Error('Expected a publishable or legacy anon key');
+          }
+          JS
+
+      - name: Download source branch archive
+        env:
+          SOURCE_BRANCH: ${{ inputs.source_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ref=$(jq -rn --arg ref "refs/heads/$SOURCE_BRANCH" '$ref|@uri')
+          gh api "repos/$GITHUB_REPOSITORY/tarball/$ref" > "$RUNNER_TEMP/source.tar.gz"
+
+      # The container sees the source and public build inputs only. Its stdout
+      # becomes an opaque artifact; no build files are extracted on this runner.
+      - name: Build static archive in isolated Node 22
+        env:
+          VITE_API_BASE_URL: ${{ vars.DEV_VITE_API_BASE_URL }}
+          VITE_SUPABASE_URL: ${{ vars.DEV_VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.DEV_VITE_SUPABASE_ANON_KEY }}
+        run: |
+          marker=$(cat /proc/sys/kernel/random/uuid)
+          echo "::stop-commands::$marker"
+          trap 'echo "::$marker::"' EXIT
+          docker run --rm --user node --cap-drop ALL --security-opt no-new-privileges \
+            --mount "type=bind,src=$RUNNER_TEMP/source.tar.gz,dst=/source.tar.gz,readonly" \
+            --env VITE_API_BASE_URL --env VITE_SUPABASE_URL --env VITE_SUPABASE_ANON_KEY \
+            node:22-bookworm@sha256:7c400d78797d8cbe3f6bb21d2227b86af4cd24b0014cc9f62ff989cc16de988e \
+            sh -eu -c '
+              npm install --prefix /tmp/tooling npm@10.9.2 >&2
+              export PATH="/tmp/tooling/node_modules/.bin:$PATH"
+              mkdir /tmp/source && cd /tmp/source
+              tar -xzf /source.tar.gz --strip-components=1
+              npm ci >&2
+              npm run build >&2
+              tar -C dist -cf - .
+            ' > "$RUNNER_TEMP/static-dist.tar"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          archive: false
+          path: ${{ runner.temp }}/static-dist.tar
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/develop' && github.event.repository.default_branch == 'develop'
+    runs-on: ubuntu-latest
+    outputs:
+      preview_url: ${{ steps.verify.outputs.url }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: static-dist.tar
+          path: ${{ runner.temp }}/artifact
+          skip-decompress: true
+
+      # Copy bytes into new regular files. Only static site paths reach Wrangler.
+      - name: Stage static files
+        shell: python
+        run: |
+          import os, re, shutil, tarfile
+          from pathlib import Path
+
+          archive, = (Path(os.environ["RUNNER_TEMP"]) / "artifact").iterdir()
+          root = Path("site")
+          root.mkdir()
+          asset = r"assets/(?:[A-Za-z0-9-][A-Za-z0-9_.-]*/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*\.(?:js|css|html|svg|png|jpe?g|webp|gif|ico|woff2?|ttf|avif)"
+          with tarfile.open(archive, mode="r|") as bundle:
+              for entry in bundle:
+                  if entry.isdir():
+                      continue
+                  if not entry.isfile() or entry.issparse():
+                      raise ValueError("Expected a regular static file")
+                  name = entry.name.removeprefix("./")
+                  if name not in {"index.html", "robots.txt", "favicon.ico", "placeholder.svg"} and not re.fullmatch(asset, name):
+                      raise ValueError("Unexpected path in static artifact")
+                  target = root / name
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with bundle.extractfile(entry) as src, target.open("xb") as dst:
+                      shutil.copyfileobj(src, dst)
+          if not (root / "index.html").is_file():
+              raise ValueError("Missing index.html")
+
+      - name: Check Pages production branch before upload
+        id: project
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: ${{ vars.CLOUDFLARE_PROJECT_NAME }}
+        run: |
+          [[ "$ACCOUNT" =~ ^[0-9a-fA-F]{32}$ && "$PROJECT" =~ ^[a-z0-9][a-z0-9-]*$ ]]
+          host=$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer $TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT/pages/projects/$PROJECT" |
+            jq -er --arg project "$PROJECT" '
+              select(.success == true) | .result | select(.name == $project)
+              | select(.production_branch | type == "string" and length > 0 and ascii_downcase != "manual-test")
+              | .subdomain | select(test("^[a-z0-9-]+\\.pages\\.dev$"))')
+          [[ "$host" =~ ^[a-z0-9-]+\.pages\.dev$ ]]
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+          echo "name=$PROJECT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload static preview
+        id: upload
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: npm
+          wranglerVersion: '4.169.0'
+          command: pages deploy site --project-name=${{ steps.project.outputs.name }} --branch=manual-test
+
+      - name: Verify preview alias
+        id: verify
+        env:
+          HOST: ${{ steps.project.outputs.host }}
+          ALIAS: ${{ steps.upload.outputs.pages-deployment-alias-url }}
+          PAGES_ENVIRONMENT: ${{ steps.upload.outputs.pages-environment }}
+        run: |
+          url="https://manual-test.$HOST"
+          [[ "$PAGES_ENVIRONMENT" == preview && "${ALIAS#https://}" == "manual-test.$HOST" ]]
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview: [$url]($url)" >> "$GITHUB_STEP_SUMMARY"
