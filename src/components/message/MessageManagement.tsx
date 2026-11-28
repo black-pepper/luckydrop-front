@@ -1,6 +1,8 @@
 import { useReducer, useState } from "react";
-import { Inbox, MailOpen } from "lucide-react";
+import { ArrowLeft, Inbox, MailOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { getMessageManagement } from "@/api/messageDraw";
@@ -65,18 +67,55 @@ export function MessageManagement({ contentCode }: { contentCode: string }) {
   const result = box.history.find((item) => item.code === selected);
   return (
     <section className="[&_h2]:text-lg [&_h2]:font-bold">
-      <Link to="/manage" className="text-sm text-muted-foreground">
-        ← 내 콘텐츠
-      </Link>
-      <header className="my-5">
-        <p className="mb-2 text-sm font-bold text-manage-accent">
-          메시지 뽑기 · 콘텐츠 관리
-        </p>
-        <h1 className="text-2xl font-bold">{box.event.title}</h1>
-        <p className="mt-2 text-muted-foreground">{box.event.question}</p>
+      <header className="mb-6 flex items-center gap-3">
+        <Button asChild size="icon" variant="ghost" className="shrink-0">
+          <Link to="/manage" aria-label="내 콘텐츠로 돌아가기">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <div className="min-w-0">
+          <h1 className="break-words text-xl font-bold text-foreground">
+            {box.event.title}
+          </h1>
+          <div className="mt-0.5 flex flex-wrap items-center gap-2">
+            <Badge variant="outline">메시지 뽑기</Badge>
+            <span className="break-all font-mono text-xs text-muted-foreground">
+              {contentCode}
+            </span>
+          </div>
+        </div>
       </header>
-      <div className="grid items-start gap-5 md:grid-cols-[3fr_2fr]">
-        <div className="space-y-5">
+      <Tabs defaultValue="info">
+        <TabsList
+          aria-label="메시지 뽑기 관리"
+          className="mb-4 h-auto max-w-full flex-wrap justify-start"
+        >
+          <TabsTrigger value="info">기본정보</TabsTrigger>
+          <TabsTrigger value="draw">메시지 뽑기</TabsTrigger>
+          <TabsTrigger value="history">읽은 메시지</TabsTrigger>
+          <TabsTrigger value="share">공유</TabsTrigger>
+        </TabsList>
+        <TabsContent value="info">
+          <Card className="space-y-4 p-5">
+            <h2>기본정보</h2>
+            <dl className="space-y-4 text-sm">
+              <div>
+                <dt className="font-medium">참여자에게 보여줄 질문</dt>
+                <dd className="mt-1.5 rounded-md bg-muted/30 px-3 py-2">
+                  {box.event.question}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium">접수 기간</dt>
+                <dd className="mt-1.5 rounded-md bg-muted/30 px-3 py-2">
+                  {new Date(box.event.start).toLocaleString("ko-KR")} ~{" "}
+                  {new Date(box.event.end).toLocaleString("ko-KR")}
+                </dd>
+              </div>
+            </dl>
+          </Card>
+        </TabsContent>
+        <TabsContent value="draw">
           <Card className="space-y-4 p-5">
             <h2 className="flex items-center gap-2">
               <Inbox /> 받은 편지함
@@ -129,6 +168,8 @@ export function MessageManagement({ contentCode }: { contentCode: string }) {
               </section>
             )}
           </Card>
+        </TabsContent>
+        <TabsContent value="history">
           <Card className="space-y-4 p-5">
             <h2>읽은 메시지</h2>
             {box.history.length === 0 && (
@@ -163,9 +204,11 @@ export function MessageManagement({ contentCode }: { contentCode: string }) {
               </article>
             ))}
           </Card>
-        </div>
-        <Sharing contentCode={contentCode} invitations={box.invitations} />
-      </div>
+        </TabsContent>
+        <TabsContent value="share">
+          <Sharing contentCode={contentCode} invitations={box.invitations} />
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }
