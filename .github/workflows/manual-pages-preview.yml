@@ -61,24 +61,43 @@ jobs:
           }
           JS
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: refs/heads/${{ inputs.source_branch }}
-          persist-credentials: false
+      - name: Download source branch archive
+        env:
+          SOURCE_BRANCH: ${{ inputs.source_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ref=$(jq -rn --arg ref "refs/heads/$SOURCE_BRANCH" '$ref|@uri')
+          gh api "repos/$GITHUB_REPOSITORY/tarball/$ref" > "$RUNNER_TEMP/source.tar.gz"
 
-      - run: npm install --global npm@10.9.2 && npm ci
-
-      - name: Build with public development configuration
+      # The container sees the source and public build inputs only. Its stdout
+      # becomes an opaque artifact; no build files are extracted on this runner.
+      - name: Build static archive in isolated Node 22
         env:
           VITE_API_BASE_URL: ${{ vars.DEV_VITE_API_BASE_URL }}
           VITE_SUPABASE_URL: ${{ vars.DEV_VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.DEV_VITE_SUPABASE_ANON_KEY }}
-        run: npm run build
+        run: |
+          marker=$(cat /proc/sys/kernel/random/uuid)
+          echo "::stop-commands::$marker"
+          trap 'echo "::$marker::"' EXIT
+          docker run --rm --user node --cap-drop ALL --security-opt no-new-privileges \
+            --mount "type=bind,src=$RUNNER_TEMP/source.tar.gz,dst=/source.tar.gz,readonly" \
+            --env VITE_API_BASE_URL --env VITE_SUPABASE_URL --env VITE_SUPABASE_ANON_KEY \
+            node:22-bookworm@sha256:7c400d78797d8cbe3f6bb21d2227b86af4cd24b0014cc9f62ff989cc16de988e \
+            sh -eu -c '
+              npm install --prefix /tmp/tooling npm@10.9.2 >&2
+              export PATH="/tmp/tooling/node_modules/.bin:$PATH"
+              mkdir /tmp/source && cd /tmp/source
+              tar -xzf /source.tar.gz --strip-components=1
+              npm ci >&2
+              npm run build >&2
+              tar -C dist -cf - .
+            ' > "$RUNNER_TEMP/static-dist.tar"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: static-dist
-          path: dist/
+          archive: false
+          path: ${{ runner.temp }}/static-dist.tar
           if-no-files-found: error
           retention-days: 1
           overwrite: true
@@ -92,7 +111,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: static-dist
+          name: static-dist.tar
           path: ${{ runner.temp }}/artifact
           skip-decompress: true
 
@@ -100,23 +119,25 @@ jobs:
       - name: Stage static files
         shell: python
         run: |
-          import os, re, shutil, zipfile
+          import os, re, shutil, tarfile
           from pathlib import Path
 
           archive, = (Path(os.environ["RUNNER_TEMP"]) / "artifact").iterdir()
           root = Path("site")
           root.mkdir()
           asset = r"assets/(?:[A-Za-z0-9-][A-Za-z0-9_.-]*/)*[A-Za-z0-9_-][A-Za-z0-9_.-]*\.(?:js|css|html|svg|png|jpe?g|webp|gif|ico|woff2?|ttf|avif)"
-          with zipfile.ZipFile(archive) as bundle:
-              for entry in bundle.infolist():
-                  if entry.is_dir():
+          with tarfile.open(archive, mode="r|") as bundle:
+              for entry in bundle:
+                  if entry.isdir():
                       continue
-                  name = entry.filename
+                  if not entry.isfile() or entry.issparse():
+                      raise ValueError("Expected a regular static file")
+                  name = entry.name.removeprefix("./")
                   if name not in {"index.html", "robots.txt", "favicon.ico", "placeholder.svg"} and not re.fullmatch(asset, name):
                       raise ValueError("Unexpected path in static artifact")
                   target = root / name
                   target.parent.mkdir(parents=True, exist_ok=True)
-                  with bundle.open(entry) as src, target.open("xb") as dst:
+                  with bundle.extractfile(entry) as src, target.open("xb") as dst:
                       shutil.copyfileobj(src, dst)
           if not (root / "index.html").is_file():
               raise ValueError("Missing index.html")
