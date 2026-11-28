@@ -99,3 +99,21 @@ src/
 
 비상업적 목적의 사용, 복제, 수정이 허용됩니다.  
 다만 작성자의 명시적인 허가 없이 상업적 목적의 사용은 금지됩니다.
+
+## Cloudflare Pages 수동 미리보기
+
+PR 승인 후 워크플로가 기본·통합 브랜치인 `develop`에 병합되면 쓰기 권한이 있는 사용자가 **Actions → Manual Pages preview → Run workflow**에서 실행할 수 있습니다. 워크플로 브랜치는 `develop`을 선택하고, `source_branch`에는 빌드할 이 저장소의 Git 브랜치 이름을 입력합니다. 예를 들어 `participant-list`를 입력해도 Pages 배포 브랜치는 항상 `manual-test`입니다.
+
+빌드에는 아래 GitHub **저장소 변수**가 필요합니다. 세 값 모두 선택한 브랜치와 브라우저에 공개되므로 개발 환경의 공개 값만 사용합니다.
+
+| GitHub 변수 | Vite 입력 | 용도 |
+| --- | --- | --- |
+| `DEV_VITE_API_BASE_URL` | `VITE_API_BASE_URL` | 개발 백엔드 API의 HTTPS 주소 |
+| `DEV_VITE_SUPABASE_URL` | `VITE_SUPABASE_URL` | 로그인에 사용하는 개발 Supabase 프로젝트의 HTTPS 주소 |
+| `DEV_VITE_SUPABASE_ANON_KEY` | `VITE_SUPABASE_ANON_KEY` | 동일 프로젝트의 publishable 키 또는 역할이 `anon`인 레거시 공개 키 |
+
+로그인 콜백은 앱의 기본값인 미리보기 호스트의 `/manage/login`을 사용하고, 로그인 후 기본 이동 경로는 `/manage`입니다. OAuth 로그인을 테스트하려면 개발 Supabase 프로젝트의 허용 리다이렉트 URL이 이 콜백을 포함해야 합니다. 관리는 기존 Supabase 세션과 백엔드의 Bearer 토큰 검증을 사용합니다.
+
+배포 작업은 기존 저장소 변수 `CLOUDFLARE_PROJECT_NAME`과 비밀 `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`으로 프로젝트 설정을 조회합니다. 운영 브랜치를 확인할 수 없거나 `manual-test`이면 업로드 전에 중단합니다. 업로드 후 Cloudflare가 반환한 환경과 브랜치 별칭이 일치해야 실행 요약에 고정 URL을 표시합니다. 현재 프로젝트의 예상 주소는 `https://manual-test.luckydrop-dev.pages.dev`입니다. 같은 별칭은 다음 성공한 수동 배포를 가리킵니다.
+
+[GitHub 수동 실행](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow) · [Cloudflare 미리보기 별칭](https://developers.cloudflare.com/pages/configuration/preview-deployments/) · [Wrangler를 통한 직접 업로드](https://developers.cloudflare.com/pages/get-started/direct-upload/)
