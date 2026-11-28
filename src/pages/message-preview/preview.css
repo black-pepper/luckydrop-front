@@ -1,0 +1,81 @@
+.message-preview h1 {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.22;
+}
+.message-preview h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+.message-preview h3,
+.message-preview form label {
+  font-weight: 700;
+}
+.message-preview form label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.875rem;
+}
+.message-preview {
+  overflow-wrap: anywhere;
+}
+.message-preview .letter-banner {
+  background: linear-gradient(120deg, #fff0df, #f8dce9);
+  border: 1px solid #eed6d5;
+  border-radius: 1.25rem;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  color: #493549;
+}
+.preview-panel {
+  padding: clamp(1.25rem, 4vw, 2rem);
+}
+.preview-panel > * + * {
+  margin-top: 1rem;
+}
+.preview-panel [role="alert"] {
+  font-size: 0.875rem;
+  color: #a5253d;
+}
+.preview-select {
+  width: 100%;
+  border: 1px solid hsl(var(--input));
+  border-radius: 0.75rem;
+  padding: 0.6rem;
+}
+.letter-body {
+  margin-top: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 1.25rem;
+  border-left: 3px solid hsl(var(--primary));
+  border-radius: 0.5rem;
+  background: hsl(var(--background));
+  line-height: 1.75;
+}
+@media (min-width: 740px) {
+  .paper-envelope {
+    position: absolute;
+    right: 5%;
+    top: 27%;
+    width: 7rem;
+    height: 4.7rem;
+    background: #fff9ed;
+    border: 2px solid #bc878d;
+    border-radius: 0.5rem;
+    transform: rotate(9deg);
+    overflow: hidden;
+    box-shadow: 5px 6px 0 #e7b9bc;
+  }
+  .paper-envelope::before {
+    content: "";
+    position: absolute;
+    width: 78%;
+    height: 110%;
+    top: -72%;
+    left: 11%;
+    border: 2px solid #bc878d;
+    background: #fff5e0;
+    transform: rotate(45deg);
+  }
+}
