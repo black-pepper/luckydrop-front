@@ -3,7 +3,7 @@ export type ContentType = "DRAW" | "QUIZ" | "MESSAGEBOX";
 export const CONTENT_TYPE_LABEL_MAP: Record<ContentType, string> = {
   DRAW: "뽑기",
   QUIZ: "퀴즈",
-  MESSAGEBOX: "메시지함",
+  MESSAGEBOX: "메시지 뽑기",
 };
 
 export const CONTENT_TYPE_COLOR_MAP: Record<ContentType, string> = {

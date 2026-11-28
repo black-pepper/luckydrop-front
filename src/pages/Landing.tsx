@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Gift, MessageCircle, KeyRound, Sparkles, Users, Settings, ChevronRight, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { sampleContentCode } from "@/data/messageDrawFixtures";
 import Footer from "@/components/Footer";
 
 /* ───────── Header ───────── */
@@ -75,6 +76,9 @@ const HeroSection = () => {
         <Button size="lg" className="w-full sm:w-auto gap-2" onClick={() => navigate("/manage/login")}>
           <Settings size={18} /> 주최자로 시작하기
         </Button>
+        <Button asChild size="lg" variant="secondary" className="w-full sm:w-auto gap-2">
+          <Link to={`/draw/${sampleContentCode}`}><MessageCircle size={18} /> 메시지 뽑기 참여하기</Link>
+        </Button>
       </div>
       <p className="text-xs text-muted-foreground mt-4">
         이미 코드를 받으셨다면, 주최자가 공유한 링크로 바로 입장하세요.
@@ -141,13 +145,13 @@ const FeaturesSection = () => {
       iconBg: "bg-[hsl(var(--peach)/0.35)]",
       comingSoon: false,
     },
-    // {
-    //   icon: <MessageCircle size={28} className="text-secondary-foreground" />,
-    //   title: "익명 메시지함",
-    //   desc: "이름 없이 마음을 전할 수 있는 따뜻한 메시지 공간이에요.",
-    //   iconBg: "bg-[hsl(var(--lavender)/0.35)]",
-    //   comingSoon: true,
-    // },
+    {
+      icon: <MessageCircle size={28} className="text-accent-foreground" />,
+      title: "메시지 뽑기",
+      desc: "참여자가 보낸 글을 모아 주최자가 한 통씩 열어 읽어요.",
+      iconBg: "bg-accent/35",
+      comingSoon: false,
+    },
     {
       icon: <KeyRound size={28} className="text-accent-foreground" />,
       title: "코드 기반 참여",

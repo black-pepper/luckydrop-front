@@ -1,14 +1,22 @@
-import { useState } from "react";
+import { useReducer, useState } from "react";
 import { Inbox, MailOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { base, formatTime, invitation } from "./fixtures";
-import { DeleteMessage } from "./shared";
-import type { HostMailbox } from "./usePreviewMailbox";
+import { Link } from "react-router-dom";
+import { getMessageManagement } from "@/api/messageDraw";
+import { useMessageOwner } from "@/hooks/useMessageOwner";
+import { DeleteMessage } from "./DeleteMessage";
 
-export function Sharing({ search }: { search: string }) {
+function Sharing({
+  contentCode,
+  invitations,
+}: {
+  contentCode: string;
+  invitations: string[];
+}) {
   const [notice, setNotice] = useState("");
-  const url = location.origin + base + "/participant" + search;
+  const path = "/draw/" + contentCode;
+  const url = location.origin + path;
   async function copy(value: string) {
     try {
       await navigator.clipboard.writeText(value);
@@ -18,48 +26,58 @@ export function Sharing({ search }: { search: string }) {
     }
   }
   return (
-    <Card className="preview-panel">
+    <Card className="space-y-4 p-5">
       <h2>참여 초대</h2>
-      <p className="break-all text-sm select-all">{url}</p>
-      <p>
-        초대 코드 <b>{invitation}</b>
-      </p>
+      <Link to={path} className="block break-all text-sm underline">
+        {url}
+      </Link>
+
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => copy(url)}>
           링크 복사
         </Button>
-        <Button variant="outline" onClick={() => copy(invitation)}>
-          코드 복사
-        </Button>
       </div>
+      <h3 className="font-semibold">초대 코드</h3>
+      {invitations.map((code) => (
+        <div key={code} className="flex items-center justify-between gap-2">
+          <b className="font-mono">{code}</b>
+          <Button size="sm" variant="outline" onClick={() => copy(code)}>
+            코드 복사
+          </Button>
+        </div>
+      ))}
+      <p className="text-xs text-muted-foreground">
+        현재 예시 데이터로 동작해요. 새로 만든 이벤트와 변경 사항은 이 탭에서
+        확인할 수 있어요.
+      </p>
       {notice && <p role="status">{notice}</p>}
     </Card>
   );
 }
 
-export function Host({
-  box,
-  admin,
-  search,
-}: {
-  box: HostMailbox;
-  admin: boolean;
-  search: string;
-}) {
+export function MessageManagement({ contentCode }: { contentCode: string }) {
+  const owner = useMessageOwner();
+  const [, refresh] = useReducer((n) => n + 1, 0);
   const [selected, setSelected] = useState<string>();
+  const box = getMessageManagement(contentCode, owner);
+  if (!box)
+    return <p>{owner ? "이 이벤트에 접근할 수 없어요." : "불러오는 중..."}</p>;
   const result = box.history.find((item) => item.code === selected);
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
-      <header className="mb-6">
+    <section className="[&_h2]:text-lg [&_h2]:font-bold">
+      <Link to="/manage" className="text-sm text-muted-foreground">
+        ← 내 콘텐츠
+      </Link>
+      <header className="my-5">
         <p className="mb-2 text-sm font-bold text-manage-accent">
-          {admin ? "모의 관리자" : "주최자"} · 메시지 관리
+          메시지 뽑기 · 콘텐츠 관리
         </p>
-        <h1>{box.event.title}</h1>
+        <h1 className="text-2xl font-bold">{box.event.title}</h1>
         <p className="mt-2 text-muted-foreground">{box.event.question}</p>
       </header>
       <div className="grid items-start gap-5 md:grid-cols-[3fr_2fr]">
         <div className="space-y-5">
-          <Card className="preview-panel">
+          <Card className="space-y-4 p-5">
             <h2 className="flex items-center gap-2">
               <Inbox /> 받은 편지함
             </h2>
@@ -83,7 +101,7 @@ export function Host({
                 : box.phase === "closed"
                   ? "접수 마감"
                   : "접수 중"}{" "}
-              · 마감 {formatTime(box.event.end)}
+              · 마감 {new Date(box.event.end).toLocaleString("ko-KR")}
             </p>
             {box.unread === 0 && (
               <p>
@@ -95,18 +113,23 @@ export function Host({
             <Button
               className="bg-manage-accent hover:bg-manage-accent/90"
               disabled={!box.unread || box.phase === "scheduled"}
-              onClick={() => setSelected(box.openNext())}
+              onClick={() => {
+                setSelected(box.openNext());
+                refresh();
+              }}
             >
               <MailOpen /> 메시지 한 장 뽑기
             </Button>
             {result?.body && (
               <section aria-live="polite">
                 <h3>열어 본 메시지</h3>
-                <blockquote className="letter-body">{result.body}</blockquote>
+                <blockquote className="mt-2 whitespace-pre-wrap break-words rounded-lg bg-muted p-4">
+                  {result.body}
+                </blockquote>
               </section>
             )}
           </Card>
-          <Card className="preview-panel">
+          <Card className="space-y-4 p-5">
             <h2>읽은 메시지</h2>
             {box.history.length === 0 && (
               <p>한 장 뽑으면 이곳에서 다시 볼 수 있어요.</p>
@@ -120,21 +143,29 @@ export function Host({
                   {item.body && (
                     <Button
                       variant="outline"
-                      onClick={() => box.hide(item.code)}
+                      onClick={() => {
+                        box.hide(item.code);
+                        refresh();
+                      }}
                     >
                       숨기기
                     </Button>
                   )}
-                  {admin && (
-                    <DeleteMessage onConfirm={() => box.remove(item.code)} />
+                  {box.canDelete && (
+                    <DeleteMessage
+                      onConfirm={() => {
+                        box.remove(item.code);
+                        refresh();
+                      }}
+                    />
                   )}
                 </div>
               </article>
             ))}
           </Card>
         </div>
-        <Sharing search={search} />
+        <Sharing contentCode={contentCode} invitations={box.invitations} />
       </div>
-    </main>
+    </section>
   );
 }

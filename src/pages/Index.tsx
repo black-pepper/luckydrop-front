@@ -6,9 +6,10 @@ import ResultCard from "@/components/draw/ResultCard";
 import ResultHistoryList from "@/components/draw/ResultHistoryList";
 import ContentStateCard from "@/components/draw/ContentStateCard";
 import { useIndex } from "@/hooks/useIndex";
+import { MessageParticipant } from "@/components/message/MessageParticipant";
+import { isMessageContent } from "@/api/messageDraw";
 
-const Index = () => {
-  const { contentCode = "" } = useParams<{ contentCode: string }>();
+const RewardDraw = ({ contentCode }: { contentCode: string }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const initialCode = searchParams.get("code") ?? "";
@@ -42,16 +43,7 @@ const Index = () => {
   } = useIndex(contentCode);
 
   return (
-    <div className="min-h-screen flex flex-col px-4">
-      {/* Decorative background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
-        <div className="absolute top-10 left-10 w-32 h-32 rounded-full bg-peach/20 blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-40 h-40 rounded-full bg-lavender/20 blur-3xl" />
-        <div className="absolute top-1/2 left-1/3 w-24 h-24 rounded-full bg-mint/20 blur-3xl" />
-      </div>
-
-      <div className="flex-1 flex items-center justify-center py-8">
-        <div className="w-full max-w-sm">
+    <>
           {contentLoadState !== "ready" && (
             <ContentStateCard
               type={contentLoadState}
@@ -112,6 +104,25 @@ const Index = () => {
               onReset={handleReset}
             />
           )}
+    </>
+  );
+};
+
+const Index = () => {
+  const { contentCode = "" } = useParams();
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen flex flex-col px-4">
+      {/* Decorative background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-10 left-10 w-32 h-32 rounded-full bg-peach/20 blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-40 h-40 rounded-full bg-lavender/20 blur-3xl" />
+        <div className="absolute top-1/2 left-1/3 w-24 h-24 rounded-full bg-mint/20 blur-3xl" />
+      </div>
+
+      <div className="flex-1 flex items-center justify-center py-8">
+        <div className="w-full max-w-sm">
+          {isMessageContent(contentCode) ? <MessageParticipant key={contentCode} contentCode={contentCode} /> : <RewardDraw contentCode={contentCode} />}
         </div>
       </div>
 

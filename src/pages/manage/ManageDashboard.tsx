@@ -5,6 +5,8 @@ import ContentCard from "@/components/manage/ContentCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle } from "lucide-react";
+import { listMessageEvents } from "@/api/messageDraw";
+import { useMessageOwner } from "@/hooks/useMessageOwner";
 import { getManageContents } from "@/api/client";
 import type { ManageContentResponse } from "@/api/types";
 import { getContentTypeLabel } from "@/lib/contentTypeConstants";
@@ -25,8 +27,10 @@ const ManageDashboard: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = contents.filter((c) => typeFilter === "all" || c.type === typeFilter);
-  const knownTypes = Array.from(new Set(contents.map((c) => c.type)));
+  const owner = useMessageOwner();
+  const allContents = [...listMessageEvents(owner), ...contents];
+  const filtered = allContents.filter((c) => typeFilter === "all" || c.type === typeFilter);
+  const knownTypes = Array.from(new Set(allContents.map((c) => c.type)));
 
   return (
     <ManageLayout>
@@ -67,7 +71,7 @@ const ManageDashboard: React.FC = () => {
         {!loading && !error && filtered.length === 0 && (
           <p className="text-center text-muted-foreground py-12">표시할 콘텐츠가 없습니다</p>
         )}
-        {!loading && !error && filtered.map((item) => (
+        {filtered.map((item) => (
           <ContentCard key={item.code} item={item} />
         ))}
       </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Gift, AlertCircle } from "lucide-react";
+import { Gift, AlertCircle, Mail } from "lucide-react";
 
 interface CodeInputCardProps {
   onSubmit: (code: string) => void;
@@ -10,6 +10,7 @@ interface CodeInputCardProps {
   startAt?: string | null;
   endAt?: string | null;
   initialValue?: string;
+  messageHint?: string;
   cooldownRemainingSeconds?: number;
 }
 
@@ -23,7 +24,8 @@ function formatDateTime(iso: string): string {
   return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
 }
 
-const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, endAt, initialValue = "", cooldownRemainingSeconds = 0 }: CodeInputCardProps) => {
+const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, endAt, initialValue = "", messageHint, cooldownRemainingSeconds = 0 }: CodeInputCardProps) => {
+  const Icon = messageHint ? Mail : Gift;
   const [code, setCode] = useState(initialValue);
   const isCoolingDown = cooldownRemainingSeconds > 0;
 
@@ -36,7 +38,7 @@ const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, 
     <div className="animate-bounce-in flex flex-col items-center gap-6 w-full max-w-sm mx-auto">
       <div className="animate-float">
         <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
-          <Gift className="w-10 h-10 text-primary" />
+          <Icon className="w-10 h-10 text-primary" />
         </div>
       </div>
 
@@ -91,13 +93,13 @@ const CodeInputCard = ({ onSubmit, error, loading, title, description, startAt, 
       {(startAt || endAt) && (
         <p className="text-xs text-muted-foreground text-center leading-relaxed">
           이벤트 기간: {startAt ? formatDateTime(startAt) : ""} ~ {endAt ? formatDateTime(endAt) : ""}<br />
-          코드는 요청 시 발급됩니다
+          {messageHint ?? "코드는 요청 시 발급됩니다"}
         </p>
       )}
       {!startAt && !endAt && (
         <p className="text-xs text-muted-foreground text-center leading-relaxed">
           이벤트 기간: 무기한<br />
-          코드는 요청 시 발급됩니다
+          {messageHint ?? "코드는 요청 시 발급됩니다"}
         </p>
       )}
     </div>

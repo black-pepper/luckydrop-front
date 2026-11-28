@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { isMessageContent } from "@/api/messageDraw";
+import { MessageManagement } from "@/components/message/MessageManagement";
 import ManageLayout from "@/components/manage/ManageLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -407,7 +409,7 @@ const InvitationCodeFormCard: React.FC<{
 
 // ── ManageContent ───────────────────────────────────────────────────────────
 
-const ManageContent: React.FC = () => {
+const RewardManagement: React.FC = () => {
   const { contentCode } = useParams<{ contentCode: string }>();
   const navigate = useNavigate();
 
@@ -1608,4 +1610,8 @@ const ManageContent: React.FC = () => {
   );
 };
 
-export default ManageContent;
+export default function ManageContent() {
+  const { contentCode = "" } = useParams();
+  if (isMessageContent(contentCode)) return <ManageLayout><MessageManagement key={contentCode} contentCode={contentCode} /></ManageLayout>;
+  return <RewardManagement />;
+}

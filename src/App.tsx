@@ -4,8 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-const ProtectedRoute = lazy(() => import("./components/manage/ProtectedRoute"));
-const MessagePreview = lazy(() => import("./pages/message-preview/MessagePreview"));
+import ProtectedRoute from "./components/manage/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +39,6 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/draw/:contentCode" element={<Index />} />
-            <Route path="/preview/message-draw/*" element={<MessagePreview />} />
             <Route path="/policy" element={<Policy />} />
             <Route path="/contact" element={<Contact />} />
 

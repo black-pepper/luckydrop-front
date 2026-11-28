@@ -10,6 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { StateToggleButton } from "@/components/ui/state-toggle-button";
 import { Trash2, Plus, ArrowLeft, ArrowRight, Gift, HelpCircle, MessageSquare, ImagePlus } from "lucide-react";
 import { createManageContent, createManageRewards, createManageInvitationCodesBatch } from "@/api/client";
+import { createMessageEvent } from "@/api/messageDraw";
+import { supabase } from "@/lib/supabase";
 import { generateCode } from "@/lib/utils";
 import type { ContentType } from "@/data/manageMockData";
 import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
@@ -17,7 +19,7 @@ import DrawModeTabs, { type DrawMode } from "@/components/manage/DrawModeTabs";
 const typeOptions: { value: ContentType; label: string; icon: React.ReactNode; desc: string; disabled?: boolean }[] = [
   { value: "DRAW", label: "뽑기", icon: <Gift className="h-7 w-7" />, desc: "보상을 설정하고 참여자가 뽑기" },
   { value: "QUIZ", label: "퀴즈", icon: <HelpCircle className="h-7 w-7" />, desc: "준비 중인 기능입니다", disabled: true },
-  { value: "MESSAGEBOX", label: "메시지함", icon: <MessageSquare className="h-7 w-7" />, desc: "준비 중인 기능입니다", disabled: true },
+  { value: "MESSAGEBOX", label: "메시지 뽑기", icon: <MessageSquare className="h-7 w-7" />, desc: "참여자가 보낸 메시지를 한 장씩 뽑아 읽어요" },
 ];
 
 interface RewardRow {
@@ -100,6 +102,8 @@ const CreateContent: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [contentType, setContentType] = useState<ContentType | null>("DRAW");
+  const isMessage = contentType === "MESSAGEBOX";
+  const steps = isMessage ? [1, 2] : [1, 2, 3, 4];
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
@@ -147,6 +151,11 @@ const CreateContent: React.FC = () => {
       errors.title = "제목을 입력해주세요.";
     }
 
+    if (targetStep === 2 && isMessage) {
+      if (!description.trim()) errors.question = "질문을 입력해주세요.";
+      if (!startAt) errors.startAt = "접수 시작 시각을 입력해주세요.";
+      if (!endAt || endAt <= startAt) errors.endAt = "시작 시각보다 늦은 마감 시각을 입력해주세요.";
+    }
     if (targetStep === 3) {
       rewards.forEach((reward) => {
         if (reward.name.trim().length === 0) {
@@ -216,6 +225,22 @@ const CreateContent: React.FC = () => {
 
   const handleSubmit = async () => {
     const step2Errors = validateStep(2);
+    if (isMessage) {
+      setValidationErrors(step2Errors);
+      if (Object.keys(step2Errors).length) return;
+      setSubmitting(true);
+      setSubmitError(null);
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) throw new Error("로그인 후 다시 시도해주세요.");
+        const code = createMessageEvent(data.session.user.id, { title: title.trim(), question: description.trim(), start: startAt, end: endAt });
+        navigate("/manage/" + code);
+      } catch (error) {
+        setSubmitError(error instanceof Error ? error.message : "콘텐츠 생성에 실패했습니다");
+        setSubmitting(false);
+      }
+      return;
+    }
     const step3Errors = validateStep(3);
     const step4Errors = validateStep(4);
     const mergedErrors = { ...step2Errors, ...step3Errors, ...step4Errors };
@@ -299,14 +324,14 @@ const CreateContent: React.FC = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">콘텐츠 만들기</h1>
         <div className="flex items-center gap-2 mt-3">
-          {[1, 2, 3, 4].map((s) => (
+          {steps.map((s) => (
             <div
               key={s}
               className={`h-1.5 flex-1 rounded-full transition-colors ${s <= step ? "bg-primary" : "bg-muted"}`}
             />
           ))}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">단계 {step} / 4</p>
+        <p className="text-xs text-muted-foreground mt-1">단계 {step} / {steps.length}</p>
         {step === 1 && validationErrors.contentType && (
           <p className="text-sm text-destructive mt-2">{validationErrors.contentType}</p>
         )}
@@ -316,20 +341,20 @@ const CreateContent: React.FC = () => {
       {step === 1 && (
         <div className="flex flex-wrap gap-3 justify-center">
           {typeOptions.filter((opt) => !opt.disabled).map((opt) => (
-            <Card
+            <button type="button" aria-pressed={contentType === opt.value}
               key={opt.value}
-              className={`w-64 transition-shadow cursor-pointer hover:shadow-md ${contentType === opt.value ? "ring-2 ring-primary" : ""}`}
+              className={`w-64 rounded-lg border bg-card shadow-sm transition-shadow cursor-pointer hover:shadow-md ${contentType === opt.value ? "ring-2 ring-primary" : ""}`}
               onClick={() => {
                 setContentType(opt.value);
                 clearFieldError("contentType");
               }}
             >
-              <CardContent className="flex flex-col items-center gap-2 p-6 text-center">
-                <div className="text-primary">{opt.icon}</div>
-                <h3 className="font-semibold text-foreground">{opt.label}</h3>
-                <p className="text-xs text-muted-foreground">{opt.desc}</p>
-              </CardContent>
-            </Card>
+              <span className="flex flex-col items-center gap-2 p-6 text-center">
+                <span className="text-primary">{opt.icon}</span>
+                <span className="font-semibold text-foreground">{opt.label}</span>
+                <span className="text-xs text-muted-foreground">{opt.desc}</span>
+              </span>
+            </button>
           ))}
         </div>
       )}
@@ -340,8 +365,8 @@ const CreateContent: React.FC = () => {
           <CardHeader><CardTitle className="text-lg">기본 정보</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label>제목 <span className="text-destructive">*</span></Label>
-              <Input
+              <Label htmlFor="create-title">제목 <span className="text-destructive">*</span></Label>
+              <Input id="create-title"
                 value={title}
                 onChange={(e) => {
                   setTitle(e.target.value);
@@ -353,25 +378,28 @@ const CreateContent: React.FC = () => {
               {validationErrors.title && <p className="text-sm text-destructive">{validationErrors.title}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>설명 <span className="text-muted-foreground text-xs">(선택)</span></Label>
-              <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="간단한 설명을 입력하세요" />
+              <Label htmlFor="create-description">{isMessage ? "참여자에게 보여줄 질문 *" : "설명 (선택)"}</Label>
+              <Input id="create-description" value={description} onChange={(e) => { setDescription(e.target.value); clearFieldError("question"); }} placeholder={isMessage ? "참여자에게 묻고 싶은 질문" : "간단한 설명을 입력하세요"} />
+              {validationErrors.question && <p role="alert" className="text-sm text-destructive">{validationErrors.question}</p>}
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>시작일 <span className="text-muted-foreground text-xs">(선택)</span></Label>
+                <Label htmlFor="startAt">{isMessage ? "접수 시작 *" : "시작일 (선택)"}</Label>
                 <Input
-                  type="datetime-local"
+                  id="startAt" type="datetime-local"
                   value={startAt}
-                  onChange={(e) => setStartAt(e.target.value)}
+                  onChange={(e) => { setStartAt(e.target.value); clearFieldError("startAt"); }}
                 />
+                {validationErrors.startAt && <p role="alert" className="text-sm text-destructive">{validationErrors.startAt}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label>종료일 <span className="text-muted-foreground text-xs">(선택)</span></Label>
+                <Label htmlFor="endAt">{isMessage ? "접수 마감 *" : "종료일 (선택)"}</Label>
                 <Input
-                  type="datetime-local"
+                  id="endAt" type="datetime-local"
                   value={endAt}
-                  onChange={(e) => setEndAt(e.target.value)}
+                  onChange={(e) => { setEndAt(e.target.value); clearFieldError("endAt"); }}
                 />
+                {validationErrors.endAt && <p role="alert" className="text-sm text-destructive">{validationErrors.endAt}</p>}
               </div>
             </div>
             <div className="flex items-center justify-between hidden">
@@ -643,12 +671,13 @@ const CreateContent: React.FC = () => {
         </Card>
       )}
 
+      {isMessage && submitError && <p role="alert" className="text-sm text-destructive">{submitError}</p>}
       {/* Navigation */}
       <div className="flex justify-between mt-6">
         <Button variant="ghost" disabled={step === 1} onClick={() => setStep((s) => s - 1)}>
           <ArrowLeft className="h-4 w-4 mr-1" /> 이전
         </Button>
-        {step < 4 ? (
+        {step < steps.length ? (
           <Button onClick={handleNext}>
             다음 <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
